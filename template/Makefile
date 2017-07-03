@@ -17,7 +17,7 @@ A2L=arm-none-eabi-addr2line
 ###
 # Directory Structure
 BINDIR=bin
-INCDIR=inc
+INCDIR=include
 SRCDIR=src
 
 ###

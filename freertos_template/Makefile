@@ -11,7 +11,7 @@ SIZE=arm-none-eabi-size
 ###
 # Directory Structure
 BINDIR=bin
-INCDIR=inc
+INCDIR=include
 SRCDIR=src
 
 ###
