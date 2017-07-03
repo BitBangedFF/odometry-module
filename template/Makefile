@@ -112,9 +112,4 @@ clean:
 	rm -f $(OBJECTS) $(BINDIR)/$(BINELF) $(BINDIR)/$(BINHEX) $(BINDIR)/output.map
 
 deploy:
-ifeq ($(wildcard /opt/openocd/bin/openocd),)
-	/usr/bin/openocd -f /usr/share/openocd/scripts/board/stm32f4discovery.cfg -c "program bin/"$(BINELF)" verify reset"
-else
-	/opt/openocd/bin/openocd -f /opt/openocd/share/openocd/scripts/board/stm32f4discovery.cfg -c "program bin/"$(BINELF)" verify reset"
-endif
-
+	st-flash --format ihex write $(BINDIR)/$(BINHEX)
