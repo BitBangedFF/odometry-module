@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    IO_Toggle/stm32f4xx_conf.h  
+  * @file    stm32f4xx_conf.h  
   * @author  MCD Application Team
   * @version V1.0.0
   * @date    19-September-2011
