@@ -34,10 +34,11 @@ MCFLAGS=-mcpu=cortex-m4 -mthumb -mlittle-endian \
 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb-interwork
 # COMPILE FLAGS
 DEFS=-DUSE_STDPERIPH_DRIVER -DSTM32F4XX
-CFLAGS  =-c $(MCFLAGS) $(DEFS) $(INCLUDES)
+CFLAGS  =-c $(MCFLAGS) -std=gnu99 -Wall $(DEFS) $(INCLUDES)
 # LINKER FLAGS
-LDSCRIPT= linker/stm32_flash.ld
-LDFLAGS =-T $(LDSCRIPT) --specs=nosys.specs $(MCFLAGS)
+LDSCRIPT_DEBUG=linker/stm32_flash_debug.ld
+LDSCRIPT=linker/stm32_flash.ld
+LDFLAGS=-T $(LDSCRIPT) --specs=nosys.specs $(MCFLAGS)
 
 ###
 # Optimizations
@@ -83,7 +84,7 @@ endif
 
 ###
 # Build Rules
-.PHONY: all release release-memopt debug clean
+.PHONY: all release release-memopt debug clean flash st-semihost gdb
 
 all: release
 
@@ -91,8 +92,10 @@ release: $(BINDIR)/$(BINHEX)
 
 release-memopt: release
 
-debug: CFLAGS+=-g
-debug: LDFLAGS+=-g
+debug: CFLAGS+=-ggdb -DBUILD_TYPE_DEBUG
+debug: LDFLAGS+=-ggdb
+debug: LDFLAGS+=--specs=rdimon.specs -lc -lrdimon
+debug: LDSCRIPT=$(LDSCRIPT_DEBUG)
 debug: release
 
 $(BINDIR)/$(BINHEX): $(BINDIR)/$(BINELF)
@@ -117,3 +120,9 @@ clean:
 
 flash:
 	st-flash --format ihex write $(BINDIR)/$(BINHEX)
+
+st-semihost:
+	st-util --semihosting
+
+gdb:
+	arm-none-eabi-gdb $(BINDIR)/$(BINELF)

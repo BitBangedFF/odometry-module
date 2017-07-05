@@ -12,6 +12,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include "debug.h"
+
 
 void hw_init(void)
 {
@@ -26,11 +28,15 @@ void hw_init(void)
 
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
     GPIO_Init(GPIOD, &gpio_led);
+
+    debug_puts("hw_int\n");
 }
 
 
 void led_task(void *params)
 {
+    debug_puts("led_task\n");
+
     while(1)
     {
         GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
@@ -42,6 +48,8 @@ void led_task(void *params)
 
 int main(void)
 {
+    debug_init();
+
     hw_init();
 
     (void) SysTick_Config(SystemCoreClock / 1000);
