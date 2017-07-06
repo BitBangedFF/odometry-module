@@ -34,7 +34,7 @@ void led_task(void *params)
         led_toggle(LED_BLUE);
         led_toggle(LED_ORANGE);
 
-        vTaskDelay(500 / portTICK_RATE_MS);
+        vTaskDelay(M2T(500));
     }
 }
 
