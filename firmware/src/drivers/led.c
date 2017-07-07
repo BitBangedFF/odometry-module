@@ -49,6 +49,12 @@ void led_init(void)
 }
 
 
+bool led_is_init(void)
+{
+    return is_init;
+}
+
+
 void led_set(
         const led_kind led,
         const bool state)

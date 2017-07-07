@@ -36,6 +36,9 @@ typedef enum
 void led_init(void);
 
 
+bool led_is_init(void);
+
+
 void led_set(
         const led_kind led,
         const bool state);
