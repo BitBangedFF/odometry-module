@@ -14,6 +14,7 @@
 #include "queue.h"
 
 #include "nvicconf.h"
+#include "debug.h"
 #include "uart1.h"
 
 
@@ -94,6 +95,8 @@ void uart1_init(
 
         is_init = true;
     }
+
+    debug_puts("uart1_init\n");
 }
 
 

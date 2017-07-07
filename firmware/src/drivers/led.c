@@ -10,6 +10,7 @@
 
 #include "stm32f4xx_conf.h"
 
+#include "debug.h"
 #include "led.h"
 
 
@@ -46,6 +47,8 @@ void led_init(void)
 
         is_init = true;
     }
+
+    debug_puts("led_init\n");
 }
 
 
