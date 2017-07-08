@@ -13,12 +13,14 @@
 #include "debug.h"
 #include "led.h"
 #include "uart1.h"
+#include "uart2.h"
 
 
 void hw_init(void)
 {
     led_init();
     uart1_init(UART1_BAUDRATE);
+    uart2_init(UART2_BAUDRATE);
 }
 
 
