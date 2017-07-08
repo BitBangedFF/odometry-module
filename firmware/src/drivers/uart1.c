@@ -24,12 +24,11 @@ static bool is_init = false;
 
 static void __attribute__((used)) USART3_IRQHandler(void)
 {
-    uint8_t data;
     portBASE_TYPE higher_priority_task_woken = pdFALSE;
 
     if(USART_GetITStatus(UART1_TYPE, USART_IT_RXNE) != 0)
     {
-        data = USART_ReceiveData(UART1_TYPE) & 0x00FF;
+        const uint8_t data = USART_ReceiveData(UART1_TYPE) & 0x00FF;
         (void) xQueueSendFromISR(
                 rx_queue,
                 &data,
