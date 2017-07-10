@@ -15,6 +15,7 @@
 
 #include "nvicconf.h"
 #include "debug.h"
+#include "led.h"
 #include "uart2.h"
 
 
@@ -28,6 +29,8 @@ static void __attribute__((used)) USART2_IRQHandler(void)
 
     if(USART_GetITStatus(UART2_TYPE, USART_IT_RXNE) != 0)
     {
+        led_toggle(LED_UART2_STATUS);
+
         const uint8_t data = USART_ReceiveData(UART2_TYPE) & 0x00FF;
         (void) xQueueSendFromISR(
                 rx_queue,

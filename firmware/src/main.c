@@ -19,6 +19,7 @@
 void hw_init(void)
 {
     led_init();
+    led_set_all(false);
     uart1_init(UART1_BAUDRATE);
     uart2_init(UART2_BAUDRATE);
 }
