@@ -41,4 +41,16 @@ void can1_init(void);
 bool can1_is_init(void);
 
 
+bool can1_read(
+        CanRxMsg * const msg);
+
+
+bool can1_read_timeout(
+        CanRxMsg * const msg);
+
+
+bool can1_write(
+        CanTxMsg * const msg);
+
+
 #endif  /* CAN1_H */

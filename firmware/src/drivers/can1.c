@@ -79,7 +79,7 @@ void can1_init(void)
         can_init.CAN_BS1 = CAN_BS1_6tq;
         can_init.CAN_BS2 = CAN_BS2_8tq;
         can_init.CAN_Prescaler = 2;
-        CAN_Init(CAN1_CHANNEL, &can_init);
+        (void) CAN_Init(CAN1_CHANNEL, &can_init);
 
         can_filter.CAN_FilterNumber = CAN1_FILTER_NUM;
         can_filter.CAN_FilterMode = CAN_FilterMode_IdMask;
@@ -88,7 +88,7 @@ void can1_init(void)
         can_filter.CAN_FilterIdLow = 0x0000;
         can_filter.CAN_FilterMaskIdHigh = 0x0000;
         can_filter.CAN_FilterMaskIdLow = 0x0000;
-        can_filter.CAN_FilterFIFOAssignment = 0;
+        can_filter.CAN_FilterFIFOAssignment = CAN_Filter_FIFO0;
         can_filter.CAN_FilterActivation = ENABLE;
         CAN_FilterInit(&can_filter);
 
@@ -113,4 +113,60 @@ void can1_init(void)
 bool can1_is_init(void)
 {
     return is_init;
+}
+
+
+bool can1_read(
+        CanRxMsg * const msg)
+{
+    bool ret = false;
+
+    if(is_init == true)
+    {
+        (void) xQueueReceive(rx_queue, msg, portMAX_DELAY);
+        ret = true;
+    }
+
+    return ret;
+}
+
+
+bool can1_read_timeout(
+        CanRxMsg * const msg)
+{
+    bool ret = false;
+
+    if(is_init == true)
+    {
+        if(xQueueReceive(rx_queue, msg, CAN1_RX_TIMEOUT_TICKS) == pdTRUE)
+        {
+            ret = true;
+        }
+    }
+
+    if(ret == false)
+    {
+        msg->StdId = 0x00;
+        msg->ExtId = 0x00;
+        msg->DLC = 0;
+    }
+
+    return ret;
+}
+
+
+bool can1_write(
+        CanTxMsg * const msg)
+{
+    bool ret = false;
+
+    if(is_init == true)
+    {
+        if(CAN_Transmit(CAN1_CHANNEL, msg) == CAN_TxStatus_Ok)
+        {
+            ret = true;
+        }
+    }
+
+    return ret;
 }
