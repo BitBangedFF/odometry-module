@@ -103,6 +103,7 @@ $(BINDIR)/$(BINHEX): $(BINDIR)/$(BINELF)
 	@echo "Objcopy from ELF to IHEX complete!\n"
 
 $(BINDIR)/$(BINELF): $(OBJECTS)
+	@mkdir -p bin
 	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
 	@echo "Linking complete!\n"
 	$(SIZE) $(BINDIR)/$(BINELF)
