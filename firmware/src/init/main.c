@@ -10,57 +10,24 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include "config.h"
 #include "debug.h"
 #include "led.h"
-#include "uart1.h"
-#include "uart2.h"
-
-
-void hw_init(void)
-{
-    led_init();
-    led_set_all(false);
-    uart1_init(UART1_BAUDRATE);
-    uart2_init(UART2_BAUDRATE);
-    can1_init();
-}
-
-
-void led_task(void *params)
-{
-    debug_puts("led_task\n");
-    
-    led_set_all(true);
-    led_set(LED_ORANGE, false);
-
-    while(1)
-    {
-        led_toggle(LED_BLUE);
-        led_toggle(LED_ORANGE);
-
-        vTaskDelay(M2T(500));
-    }
-}
+#include "system.h"
 
 
 int main(void)
 {
     debug_init();
 
-    hw_init();
-
     (void) SysTick_Config(SystemCoreClock / 1000);
 
-    (void) xTaskCreate(
-            led_task,
-            "led_task",
-            configMINIMAL_STACK_SIZE,
-            NULL,
-            tskIDLE_PRIORITY + 2UL,
-            NULL);
+    system_start();
 
     vTaskStartScheduler();
 
+    // should never get here
+    led_set_all(true);
     while(1);
 
     return 0;
