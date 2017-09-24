@@ -212,7 +212,6 @@ int main(void)
     Error_Handler();
   }
 
-  setbuf(stdout, NULL);
   setvbuf(stdin, NULL, _IONBF, 0);
   setvbuf(stdout, NULL, _IONBF, 0);
   setvbuf(stderr, NULL, _IONBF, 0);
