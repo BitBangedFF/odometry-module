@@ -133,4 +133,4 @@ st-semihost:
 	st-util --semihosting
 
 gdb:
-	$(GDB) --command=semihosting/.gdbinit $(BINDIR)/$(BINELF)
+	$(GDB) --command=gdb/gdbinit $(BINDIR)/$(BINELF)
