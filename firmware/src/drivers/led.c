@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "stm32f4xx_conf.h"
+#include "stm32f7xx_hal.h"
 
 #include "debug.h"
 #include "led.h"

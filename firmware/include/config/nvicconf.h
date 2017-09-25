@@ -13,15 +13,15 @@
 #define NVIC_MID_PRI  10
 #define NVIC_HIGH_PRI 7
 
-#define NVIC_I2C_HIGH_PRI    3
-#define NVIC_I2C_LOW_PRI      4
-#define NVIC_TRACE_TIM_PRI    4
-#define NVIC_UART_PRI         6
+#define NVIC_I2C_HIGH_PRI   3
+#define NVIC_I2C_LOW_PRI    4
+#define NVIC_TRACE_TIM_PRI  4
+#define NVIC_UART_PRI       6
 
-#define NVIC_RADIO_PRI        11
-#define NVIC_ADC_PRI          12
-#define NVIC_CPPM_PRI         14
-#define NVIC_SYSLINK_PRI      5
+#define NVIC_RADIO_PRI      11
+#define NVIC_ADC_PRI        12
+#define NVIC_CPPM_PRI       14
+#define NVIC_SYSLINK_PRI    5
 
 #define EXTI0_PRI NVIC_LOW_PRI
 #define EXTI1_PRI NVIC_LOW_PRI

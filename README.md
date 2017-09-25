@@ -1,2 +1,6 @@
 # odometry-module
 High-level system monitoring and odometry module running in FreeRTOS on the NUCLEO-F767ZI STM32F767ZIT6 (part of my cbr-hacks).
+
+TODO:
+  * Migrate to use the MPU (memory protection unit) FreeRTOS API/implementation
+  * Migrate FreeRTOS API usages to use the static allocation scheme
