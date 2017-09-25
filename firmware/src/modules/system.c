@@ -4,7 +4,6 @@
  *
  */
 
-
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -18,20 +17,18 @@
 #include "nvicconf.h"
 #include "debug.h"
 #include "led.h"
-#include "uart1.h"
-#include "uart2.h"
-#include "can1.h"
-
+//#include "uart1.h"
+//#include "uart2.h"
+//#include "can1.h"
+#include "system.h"
 
 static xSemaphoreHandle system_ready_mutex;
 static bool is_init = false;
-
 
 static void signal_ready_to_start(void)
 {
     xSemaphoreGive(system_ready_mutex);
 }
-
 
 static void system_init(void)
 {
@@ -46,17 +43,16 @@ static void system_init(void)
     debug_puts("system_init\n");
 }
 
-
 static void system_task(void *params)
 {
     led_init();
     led_set(LED_SYSTEM_STATUS, true);
 
-    uart1_init(UART1_BAUDRATE);
+    //uart1_init(UART1_BAUDRATE);
     
-    uart2_init(UART2_BAUDRATE);
+    //uart2_init(UART2_BAUDRATE);
     
-    can1_init();
+    //can1_init();
 
     system_init();
 
@@ -77,12 +73,10 @@ static void system_task(void *params)
     }
 }
 
-
 void vApplicationIdleHook(void)
 {
     // TODO - update watchdog
 }
-
 
 void system_start(void)
 {
@@ -94,7 +88,6 @@ void system_start(void)
             SYSTEM_TASK_PRI,
             NULL);
 }
-
 
 void system_wait_for_start(void)
 {

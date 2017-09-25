@@ -169,5 +169,9 @@ header file. */
               to prevent overwriting SysTick_Handler defined within STM32Cube HAL */
 /* #define xPortSysTickHandler SysTick_Handler */
 
+/* Milliseconds to OS Ticks */
+#define M2T(X) ((unsigned int)((X)*(configTICK_RATE_HZ/1000.0)))
+#define F2T(X) ((unsigned int)((configTICK_RATE_HZ/(X))))
+
 #endif /* FREERTOS_CONFIG_H */
 

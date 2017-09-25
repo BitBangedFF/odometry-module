@@ -2,6 +2,8 @@
 #include "stdio.h"
 #include "stm32f7xx_it.h"
 
+void xPortSysTickHandler(void);
+
 /******************************************************************************/
 /*            Cortex-M7 Processor Exceptions Handlers                         */
 /******************************************************************************/
@@ -103,7 +105,7 @@ void DebugMon_Handler(void)
   */
 void SysTick_Handler(void)
 {
-    HAL_IncTick();
+    xPortSysTickHandler();
 }
 
 /******************************************************************************/

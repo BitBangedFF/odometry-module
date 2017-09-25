@@ -4,7 +4,6 @@
  *
  */
 
-
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -13,72 +12,56 @@
 #include "debug.h"
 #include "led.h"
 
-
 static bool is_init = false;
 
-
-static const uint32_t LED_PINS[] =
+static const uint16_t LED_PINS[] =
 {
     [LED_GREEN] = LED_PIN_GREEN,
-    [LED_ORANGE] = LED_PIN_ORANGE,
-    [LED_RED] = LED_PIN_RED,
-    [LED_BLUE] = LED_PIN_BLUE
+    [LED_BLUE] = LED_PIN_BLUE,
+    [LED_RED] = LED_PIN_RED
 };
-
 
 void led_init(void)
 {
     if(is_init == false)
     {
-        GPIO_InitTypeDef gpio_leds;
+        GPIO_InitTypeDef gpio_init;
 
-        RCC_AHB1PeriphClockCmd(LED_GPIO_PERIF, ENABLE);
+        LED_GPIO_CLK_ENABLE();
 
-        GPIO_StructInit(&gpio_leds);
-        gpio_leds.GPIO_Mode = GPIO_Mode_OUT;
-        gpio_leds.GPIO_Pin = (LED_PIN_GREEN | LED_PIN_ORANGE | LED_PIN_RED | LED_PIN_BLUE);
-        gpio_leds.GPIO_PuPd = GPIO_PuPd_NOPULL;
-        gpio_leds.GPIO_Speed = GPIO_Speed_25MHz;
-        gpio_leds.GPIO_OType = GPIO_OType_PP;
+        gpio_init.Pin = (LED_PIN_GREEN | LED_PIN_BLUE | LED_PIN_RED);
+        gpio_init.Mode = GPIO_MODE_OUTPUT_PP;
+        gpio_init.Pull = GPIO_NOPULL;
+        gpio_init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+        gpio_init.Alternate = 0;
 
-        GPIO_Init(GPIOD, &gpio_leds);
-
-        led_set_all(false);
+        HAL_GPIO_Init(LED_GPIO_PORT, &gpio_init);
 
         is_init = true;
+
+        led_set_all(false);
     }
 
     debug_puts("led_init\n");
 }
-
 
 bool led_is_init(void)
 {
     return is_init;
 }
 
-
 void led_set(
         const led_kind led,
         const bool state)
 {
-    if(state == true)
-    {
-        GPIO_SetBits(LED_GPIO_PORT, LED_PINS[led]);
-    }
-    else
-    {
-        GPIO_ResetBits(LED_GPIO_PORT, LED_PINS[led]);
-    }
+    HAL_GPIO_WritePin(LED_GPIO_PORT, LED_PINS[led], (GPIO_PinState) state);
 }
-
 
 void led_toggle(
         const led_kind led)
 {
-    GPIO_ToggleBits(LED_GPIO_PORT, LED_PINS[led]);
+    HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_PINS[led]);
 }
-
 
 void led_set_all(
         const bool state)

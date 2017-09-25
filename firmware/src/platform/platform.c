@@ -7,6 +7,8 @@
 #include "stm32f7xx.h"
 #include "stm32f7xx_hal.h"
 
+#include "debug.h"
+#include "led.h"
 #include "platform.h"
 
 static void cpu_cache_enable(void)
@@ -69,11 +71,18 @@ void platform_init(void)
     HAL_Init();
 
     system_clock_config();
+
+    led_init();
+
+    debug_init();
 }
 
 void platform_error_handler(void)
 {
-    while(1);
+    while(1)
+    {
+        led_set_all(true);
+    }
 }
 
 #ifdef USE_FULL_ASSERT

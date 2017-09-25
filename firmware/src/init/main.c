@@ -12,24 +12,22 @@
 #include "config.h"
 #include "debug.h"
 #include "platform.h"
-//#include "led.h"
-//#include "system.h"
+#include "led.h"
+#include "system.h"
 
 int main(void)
 {
-    debug_init();
-
     platform_init();
 
-    //(void) SysTick_Config(SystemCoreClock / 1000);
-
-    //system_start();
+    system_start();
 
     vTaskStartScheduler();
 
     // should never get here
-    //led_set_all(true);
-    while(1);
+    while(1)
+    {
+        platform_error_handler();
+    }
 
     return 0;
 }
