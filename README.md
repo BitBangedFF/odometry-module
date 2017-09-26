@@ -9,3 +9,4 @@ TODO:
   * Integrate the LwIP port provided from the STM32Cube package
   * Migrate the vendor packages to a git repo and make them a submodule of this repo
   * Handle error bits in the IRQ receivers (like in UART1 driver)
+  * Do I need some sort of mutual exclusion around the UART1/debug output if used in multiple tasks?

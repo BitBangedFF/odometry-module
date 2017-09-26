@@ -6,13 +6,16 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "stm32f7xx_hal.h"
+#include "stm32f7xx.h"
+#include "stm32f7xx_ll_bus.h"
+#include "stm32f7xx_ll_rcc.h"
+#include "stm32f7xx_ll_gpio.h"
 #include "debug.h"
 #include "led.h"
 
 static bool is_init = false;
 
-static const uint16_t LED_PINS[] =
+static const uint32_t LED_PINS[] =
 {
     [LED_GREEN] = LED_PIN_GREEN,
     [LED_BLUE] = LED_PIN_BLUE,
@@ -23,17 +26,18 @@ void led_init(void)
 {
     if(is_init == false)
     {
-        GPIO_InitTypeDef gpio_init;
+        LL_GPIO_InitTypeDef gpio_init;
 
         LED_GPIO_CLK_ENABLE();
 
+        LL_GPIO_StructInit(&gpio_init);
         gpio_init.Pin = (LED_PIN_GREEN | LED_PIN_BLUE | LED_PIN_RED);
-        gpio_init.Mode = GPIO_MODE_OUTPUT_PP;
-        gpio_init.Pull = GPIO_NOPULL;
-        gpio_init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+        gpio_init.Mode = LL_GPIO_MODE_OUTPUT;
+        gpio_init.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
+        gpio_init.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+        gpio_init.Pull = LL_GPIO_PULL_NO;
         gpio_init.Alternate = 0;
-
-        HAL_GPIO_Init(LED_GPIO_PORT, &gpio_init);
+        LL_GPIO_Init(LED_GPIO_PORT, &gpio_init);
 
         is_init = true;
 
@@ -50,13 +54,20 @@ void led_set(
         const led_kind led,
         const bool state)
 {
-    HAL_GPIO_WritePin(LED_GPIO_PORT, LED_PINS[led], (GPIO_PinState) state);
+    if(state == true)
+    {
+        LL_GPIO_SetOutputPin(LED_GPIO_PORT, LED_PINS[led]);
+    }
+    else
+    {
+        LL_GPIO_ResetOutputPin(LED_GPIO_PORT, LED_PINS[led]);
+    }
 }
 
 void led_toggle(
         const led_kind led)
 {
-    HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_PINS[led]);
+    LL_GPIO_TogglePin(LED_GPIO_PORT, LED_PINS[led]);
 }
 
 void led_set_all(
