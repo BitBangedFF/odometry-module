@@ -19,32 +19,24 @@
 static xQueueHandle rx_queue;
 static bool is_init = false;
 
-static void __attribute__((used)) UART1_IRQ_HANDLER(void)
+void __attribute__((used)) UART1_IRQ_HANDLER(void)
 {
-#warning "TODO"
-    led_set(LED_UART1_STATUS, 1);
+    portBASE_TYPE higher_priority_task_woken = pdFALSE;
 
     if(LL_USART_IsActiveFlag_RXNE(UART1_TYPE) != 0)
     {
         if(LL_USART_IsEnabledIT_RXNE(UART1_TYPE) != 0)
         {
+            led_toggle(LED_UART1_STATUS);
+            
             const uint8_t data = LL_USART_ReceiveData8(UART1_TYPE);
+
+            (void) xQueueSendFromISR(
+                    rx_queue,
+                    &data,
+                    &higher_priority_task_woken);
         }
     }
-/*
-    portBASE_TYPE higher_priority_task_woken = pdFALSE;
-
-    if(USART_GetITStatus(UART1_TYPE, USART_IT_RXNE) != 0)
-    {
-        led_toggle(LED_UART1_STATUS);
-
-        const uint8_t data = USART_ReceiveData(UART1_TYPE) & 0x00FF;
-        (void) xQueueSendFromISR(
-                rx_queue,
-                &data,
-                &higher_priority_task_woken);
-    }
-*/
 }
 
 void uart1_init(
@@ -72,7 +64,6 @@ void uart1_init(
         UART1_RX_GPIO_CLK_ENABLE();
         UART1_TX_GPIO_CLK_ENABLE();
 
-#warning "EX REF uses USART1 here?"
         pclk_init.PeriphClockSelection = RCC_PERIPHCLK_USART3;
         pclk_init.Usart3ClockSelection = RCC_USART3CLKSOURCE_SYSCLK;
         HAL_RCCEx_PeriphCLKConfig(&pclk_init);
@@ -92,12 +83,8 @@ void uart1_init(
 
         HAL_GPIO_Init(UART1_GPIO_PORT, &gpio_init);
 
-#warning "example has priority of 0 (highest?)
-        NVIC_SetPriority(UART1_IRQ, 6);
-        //NVIC_SetPriority(UART1_IRQ, NVIC_MID_PRI);
+        NVIC_SetPriority(UART1_IRQ, NVIC_MID_PRI);
         NVIC_EnableIRQ(UART1_IRQ);
-        //HAL_NVIC_SetPriority(UART1_IRQ, NVIC_MID_PRI, 0);
-        //HAL_NVIC_EnableIRQ(UART1_IRQ);
 
         usart_init.BaudRate = baudrate;
         usart_init.DataWidth = LL_USART_DATAWIDTH_8B;
@@ -114,13 +101,9 @@ void uart1_init(
         LL_USART_ClearFlag_ORE(UART1_TYPE);
 
         LL_USART_EnableIT_RXNE(UART1_TYPE);
-        //LL_USART_EnableIT_ERROR(UART1_TYPE);
+        LL_USART_EnableIT_ERROR(UART1_TYPE);
 
         is_init = true;
-
-#warning "TESTING"
-        char msg[] = "hello\n\r";
-        uart1_send((uint8_t*) msg, sizeof(msg) - 1);
     }
 
     debug_puts("uart1_init\n");
