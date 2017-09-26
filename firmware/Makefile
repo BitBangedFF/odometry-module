@@ -38,8 +38,10 @@ MCFLAGS=-mcpu=cortex-m7 -mthumb -mlittle-endian
 MCFLAGS+=-mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb-interwork
 # COMPILE FLAGS
 DEFS=-DARM_MATH_CM7 -DUSE_HAL_DRIVER
-DEFS+=-DSTM32F767xx -DSTM32F7XX -DSTM32F7_NUCLEO
-CFLAGS  =-c $(MCFLAGS) -std=gnu99 -Wall $(DEFS) $(INCLUDES)
+DEFS+=-DSTM32F767xx -DSTM32F7XX -DSTM32F7_NUCLEO -DUSE_FULL_LL_DRIVER
+CFLAGS=-c $(MCFLAGS)
+CFLAGS+=-std=gnu99 -Wall -Wextra -Wimplicit-function-declaration -Wstrict-prototypes -Wundef -Wshadow
+CFLAGS+=$(DEFS) $(INCLUDES)
 # LINKER FLAGS
 LDSCRIPT_DEBUG=linker/stm32f7_link.ld
 LDSCRIPT=linker/stm32f7_link.ld

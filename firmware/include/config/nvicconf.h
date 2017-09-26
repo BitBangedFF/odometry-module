@@ -4,10 +4,8 @@
  *
  */
 
-
 #ifndef NVICCONF_H
 #define NVICCONF_H
-
 
 #define NVIC_LOW_PRI  13
 #define NVIC_MID_PRI  10
@@ -30,6 +28,5 @@
 #define EXTI4_PRI NVIC_SYSLINK_PRI
 #define EXTI9_5_PRI NVIC_LOW_PRI
 #define EXTI15_10_PRI NVIC_MID_PRI
-
 
 #endif /* NVICCONF_H */

@@ -6,18 +6,15 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
 #include "stm32f7xx_hal.h"
-
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
-
 #include "config.h"
 #include "nvicconf.h"
 #include "debug.h"
 #include "led.h"
-//#include "uart1.h"
+#include "uart1.h"
 //#include "uart2.h"
 //#include "can1.h"
 #include "system.h"
@@ -48,7 +45,7 @@ static void system_task(void *params)
     led_init();
     led_set(LED_SYSTEM_STATUS, true);
 
-    //uart1_init(UART1_BAUDRATE);
+    uart1_init(UART1_BAUDRATE);
     
     //uart2_init(UART2_BAUDRATE);
     

@@ -8,6 +8,7 @@
 #define LED_H
 
 #include <stdbool.h>
+#include "stm32f7xx_hal_gpio.h"
 
 #define LED_GPIO_PORT GPIOB
 
@@ -18,6 +19,7 @@
 #define LED_PIN_BLUE GPIO_PIN_7
 #define LED_PIN_RED GPIO_PIN_14
 
+#define LED_UART1_STATUS LED_GREEN
 #define LED_CAN1_STATUS LED_BLUE
 #define LED_SYSTEM_STATUS LED_RED
 #define LED_COUNT (3)

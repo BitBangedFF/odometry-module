@@ -4,9 +4,9 @@
  *
  */
 
+#include <string.h>
 #include "stm32f7xx.h"
 #include "stm32f7xx_hal.h"
-
 #include "debug.h"
 #include "led.h"
 #include "platform.h"
@@ -22,6 +22,9 @@ static void system_clock_config(void)
 {
     RCC_ClkInitTypeDef clk_init;
     RCC_OscInitTypeDef osc_init;
+
+    memset(&clk_init, 0, sizeof(clk_init));
+    memset(&osc_init, 0, sizeof(osc_init));
 
     // enable HSE oscillator and activate PLL with HSE as source
     osc_init.OscillatorType = RCC_OSCILLATORTYPE_HSE;
@@ -71,6 +74,8 @@ void platform_init(void)
     HAL_Init();
 
     system_clock_config();
+
+    HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
 
     led_init();
 
