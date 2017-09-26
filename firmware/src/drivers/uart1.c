@@ -7,7 +7,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#include "stm32f7xx_hal.h"
+#include "stm32f7xx.h"
+#include "stm32f7xx_ll_bus.h"
+#include "stm32f7xx_ll_rcc.h"
+#include "stm32f7xx_ll_gpio.h"
 #include "stm32f7xx_ll_usart.h"
 #include "FreeRTOS.h"
 #include "queue.h"
@@ -28,7 +31,7 @@ void __attribute__((used)) UART1_IRQ_HANDLER(void)
         if(LL_USART_IsEnabledIT_RXNE(UART1_TYPE) != 0)
         {
             led_toggle(LED_UART1_STATUS);
-            
+
             const uint8_t data = LL_USART_ReceiveData8(UART1_TYPE);
 
             (void) xQueueSendFromISR(
@@ -45,47 +48,41 @@ void uart1_init(
     if(is_init == false)
     {
         LL_USART_InitTypeDef usart_init;
-        GPIO_InitTypeDef gpio_init;
-        RCC_PeriphCLKInitTypeDef pclk_init;
+        LL_GPIO_InitTypeDef gpio_init;
 
         LL_USART_DeInit(UART1_TYPE);
         LL_USART_Disable(UART1_TYPE);
         LL_USART_DisableIT_RXNE(UART1_TYPE);
         LL_USART_DisableIT_ERROR(UART1_TYPE);
 
-        memset(&usart_init, 0, sizeof(usart_init));
-        memset(&gpio_init, 0, sizeof(gpio_init));
-        memset(&pclk_init, 0, sizeof(pclk_init));
-
         rx_queue = xQueueCreate(UART1_RX_QUEUE_SIZE, sizeof(uint8_t));
 
-        LL_USART_StructInit(&usart_init);
+        // enable GPIO clock and configure the USART pins
+        UART1_GPIO_CLK_ENABLE();
 
-        UART1_RX_GPIO_CLK_ENABLE();
-        UART1_TX_GPIO_CLK_ENABLE();
-
-        pclk_init.PeriphClockSelection = RCC_PERIPHCLK_USART3;
-        pclk_init.Usart3ClockSelection = RCC_USART3CLKSOURCE_SYSCLK;
-        HAL_RCCEx_PeriphCLKConfig(&pclk_init);
-
-        UART1_CLK_ENABLE();
-
+        LL_GPIO_StructInit(&gpio_init);
         gpio_init.Pin = UART1_GPIO_RX_PIN;
-        gpio_init.Mode = GPIO_MODE_AF_PP;
-        gpio_init.Pull = GPIO_PULLUP;
-        gpio_init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+        gpio_init.Mode = LL_GPIO_MODE_ALTERNATE;
+        gpio_init.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
+        gpio_init.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+        gpio_init.Pull = LL_GPIO_PULL_UP;
         gpio_init.Alternate = UART1_GPIO_AF_RX;
-
-        HAL_GPIO_Init(UART1_GPIO_PORT, &gpio_init);
+        LL_GPIO_Init(UART1_GPIO_PORT, &gpio_init);
 
         gpio_init.Pin = UART1_GPIO_TX_PIN;
         gpio_init.Alternate = UART1_GPIO_AF_TX;
+        LL_GPIO_Init(UART1_GPIO_PORT, &gpio_init);
 
-        HAL_GPIO_Init(UART1_GPIO_PORT, &gpio_init);
-
+        // configure NVIC for USART interrupts
         NVIC_SetPriority(UART1_IRQ, NVIC_MID_PRI);
         NVIC_EnableIRQ(UART1_IRQ);
 
+        // enable USART peripheral clock and clock source
+        UART1_CLK_ENABLE();
+        UART1_CLK_SOURCE();
+
+        // configure USART parameters
+        LL_USART_StructInit(&usart_init);
         usart_init.BaudRate = baudrate;
         usart_init.DataWidth = LL_USART_DATAWIDTH_8B;
         usart_init.StopBits = LL_USART_STOPBITS_1;
@@ -93,7 +90,6 @@ void uart1_init(
         usart_init.TransferDirection = LL_USART_DIRECTION_TX_RX;
         usart_init.HardwareFlowControl = LL_USART_HWCONTROL_NONE;
         usart_init.OverSampling = LL_USART_OVERSAMPLING_16;
-
         LL_USART_Init(UART1_TYPE, &usart_init);
 
         LL_USART_Enable(UART1_TYPE);
@@ -101,9 +97,12 @@ void uart1_init(
         LL_USART_ClearFlag_ORE(UART1_TYPE);
 
         LL_USART_EnableIT_RXNE(UART1_TYPE);
-        LL_USART_EnableIT_ERROR(UART1_TYPE);
+        //LL_USART_EnableIT_ERROR(UART1_TYPE);
 
         is_init = true;
+
+        const char msg[] = "hello\n\r";
+        uart1_send((uint8_t*) msg, sizeof(msg) - 1);
     }
 
     debug_puts("uart1_init\n");
