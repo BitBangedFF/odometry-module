@@ -8,7 +8,6 @@
 #define LED_H
 
 #include <stdbool.h>
-#include "stm32f7xx_hal_gpio.h"
 
 #define LED_GPIO_PORT GPIOB
 
