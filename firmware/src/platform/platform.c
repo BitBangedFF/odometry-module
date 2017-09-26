@@ -11,6 +11,10 @@
 #include "led.h"
 #include "platform.h"
 
+#ifdef BUILD_TYPE_DEBUG
+#include "uart1.h"
+#endif
+
 static void cpu_cache_enable(void)
 {
     SCB_EnableICache();
@@ -98,13 +102,14 @@ void assert_failed(uint8_t *file, uint32_t line)
 #ifdef BUILD_TYPE_DEBUG
 int __io_putchar(int ch)
 {
-    // TODO
+    uart1_put_char((uint8_t) ch);
 
     return ch;
 }
 
 int _write(int file, char *ptr, int len)
 {
+    (void) file;
     int idx;
 
     for(idx = 0; idx < len; idx += 1)

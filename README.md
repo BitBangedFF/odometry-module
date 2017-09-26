@@ -8,3 +8,4 @@ TODO:
   * Migrate FreeRTOS API usages to use the static allocation scheme
   * Integrate the LwIP port provided from the STM32Cube package
   * Migrate the vendor packages to a git repo and make them a submodule of this repo
+  * Handle error bits in the IRQ receivers (like in UART1 driver)

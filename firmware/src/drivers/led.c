@@ -40,7 +40,7 @@ void led_init(void)
         led_set_all(false);
     }
 
-    debug_puts("led_init\n");
+    debug_puts("led_init");
 }
 
 bool led_is_init(void)

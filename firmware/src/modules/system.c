@@ -37,7 +37,7 @@ static void system_init(void)
         is_init = true;
     }
 
-    debug_puts("system_init\n");
+    debug_puts("system_init");
 }
 
 static void system_task(void *params)
@@ -46,9 +46,9 @@ static void system_task(void *params)
     led_set(LED_SYSTEM_STATUS, true);
 
     uart1_init(UART1_BAUDRATE);
-    
+
     //uart2_init(UART2_BAUDRATE);
-    
+
     //can1_init();
 
     system_init();

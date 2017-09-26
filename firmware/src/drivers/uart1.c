@@ -100,12 +100,9 @@ void uart1_init(
         //LL_USART_EnableIT_ERROR(UART1_TYPE);
 
         is_init = true;
-
-        const char msg[] = "hello\n\r";
-        uart1_send((uint8_t*) msg, sizeof(msg) - 1);
     }
 
-    debug_puts("uart1_init\n");
+    debug_puts("uart1_init");
 }
 
 bool uart1_is_init(void)
