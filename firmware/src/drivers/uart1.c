@@ -163,6 +163,7 @@ void uart1_send(
             while(LL_USART_IsActiveFlag_TXE(UART1_TYPE) == 0);
 
             LL_USART_TransmitData8(UART1_TYPE, data[i]);
+            led_toggle(LED_UART1_STATUS);
         }
 
         while(LL_USART_IsActiveFlag_TC(UART1_TYPE) == 0);

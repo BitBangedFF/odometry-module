@@ -58,6 +58,7 @@ static void system_task(void *params)
     while(1)
     {
         led_toggle(LED_SYSTEM_STATUS);
+        led_set(LED_UART1_STATUS, false);
 
         vTaskDelay(M2T(500));
     }
