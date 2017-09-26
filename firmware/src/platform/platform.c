@@ -22,6 +22,25 @@ static void cpu_cache_enable(void)
     SCB_EnableDCache();
 }
 
+/**
+  * @brief  System Clock Configuration
+  *         The system Clock is configured as follow :
+  *            System Clock source            = PLL (HSE)
+  *            SYSCLK(Hz)                     = 200000000
+  *            HCLK(Hz)                       = 200000000
+  *            AHB Prescaler                  = 1
+  *            APB1 Prescaler                 = 4
+  *            APB2 Prescaler                 = 2
+  *            HSE Frequency(Hz)              = 25000000
+  *            PLL_M                          = 25
+  *            PLL_N                          = 400
+  *            PLL_P                          = 2
+  *            PLL_Q                          = 9
+  *            PLL_R                          = 7
+  *            VDD(V)                         = 3.3
+  *            Main regulator output voltage  = Scale1 mode
+  *            Flash Latency(WS)              = 7
+  */
 static void system_clock_config(void)
 {
     RCC_ClkInitTypeDef clk_init;
@@ -30,14 +49,20 @@ static void system_clock_config(void)
     memset(&clk_init, 0, sizeof(clk_init));
     memset(&osc_init, 0, sizeof(osc_init));
 
+    // enable power control clock
+    __HAL_RCC_PWR_CLK_ENABLE();
+
+    // enable voltage scaling
+    __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+
     // enable HSE oscillator and activate PLL with HSE as source
     osc_init.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-    osc_init.HSEState = RCC_HSE_BYPASS;
+    osc_init.HSEState = RCC_HSE_ON;
     osc_init.HSIState = RCC_HSI_OFF;
     osc_init.PLL.PLLState = RCC_PLL_ON;
     osc_init.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-    osc_init.PLL.PLLM = 8;
-    osc_init.PLL.PLLN = 432;
+    osc_init.PLL.PLLM = 25;
+    osc_init.PLL.PLLN = 400;
     osc_init.PLL.PLLP = RCC_PLLP_DIV2;
     osc_init.PLL.PLLQ = 9;
     osc_init.PLL.PLLR = 7;
@@ -47,7 +72,7 @@ static void system_clock_config(void)
         platform_error_handler();
     }
 
-    // activate the OverDrive to reach the 216 MHz frequency
+    // activate OverDrive
     if(HAL_PWREx_EnableOverDrive() != HAL_OK)
     {
         platform_error_handler();
