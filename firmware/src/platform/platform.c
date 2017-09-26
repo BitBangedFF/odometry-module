@@ -75,8 +75,6 @@ void platform_init(void)
 
     system_clock_config();
 
-    HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
-
     led_init();
 
     debug_init();
