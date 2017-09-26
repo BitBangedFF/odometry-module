@@ -1,5 +1,5 @@
 /**
- * @file uart1.c
+ * @file uart2.c
  * @brief TODO.
  *
  */
@@ -17,20 +17,22 @@
 #include "nvicconf.h"
 #include "debug.h"
 #include "led.h"
-#include "uart1.h"
+#include "uart2.h"
 
 static xQueueHandle rx_queue;
 static bool is_init = false;
 
-void __attribute__((used)) UART1_IRQ_HANDLER(void)
+void __attribute__((used)) UART2_IRQ_HANDLER(void)
 {
     portBASE_TYPE higher_priority_task_woken = pdFALSE;
 
-    if(LL_USART_IsActiveFlag_RXNE(UART1_TYPE) != 0)
+    if(LL_USART_IsActiveFlag_RXNE(UART2_TYPE) != 0)
     {
-        if(LL_USART_IsEnabledIT_RXNE(UART1_TYPE) != 0)
+        if(LL_USART_IsEnabledIT_RXNE(UART2_TYPE) != 0)
         {
-            const uint8_t data = LL_USART_ReceiveData8(UART1_TYPE);
+            led_toggle(LED_UART2_STATUS);
+
+            const uint8_t data = LL_USART_ReceiveData8(UART2_TYPE);
 
             (void) xQueueSendFromISR(
                     rx_queue,
@@ -40,7 +42,7 @@ void __attribute__((used)) UART1_IRQ_HANDLER(void)
     }
 }
 
-void uart1_init(
+void uart2_init(
         const uint32_t baudrate)
 {
     if(is_init == false)
@@ -48,36 +50,36 @@ void uart1_init(
         LL_USART_InitTypeDef usart_init;
         LL_GPIO_InitTypeDef gpio_init;
 
-        LL_USART_DeInit(UART1_TYPE);
-        LL_USART_Disable(UART1_TYPE);
-        LL_USART_DisableIT_RXNE(UART1_TYPE);
-        LL_USART_DisableIT_ERROR(UART1_TYPE);
+        LL_USART_DeInit(UART2_TYPE);
+        LL_USART_Disable(UART2_TYPE);
+        LL_USART_DisableIT_RXNE(UART2_TYPE);
+        LL_USART_DisableIT_ERROR(UART2_TYPE);
 
-        rx_queue = xQueueCreate(UART1_RX_QUEUE_SIZE, sizeof(uint8_t));
+        rx_queue = xQueueCreate(UART2_RX_QUEUE_SIZE, sizeof(uint8_t));
 
         // enable GPIO clock and configure the USART pins
-        UART1_GPIO_CLK_ENABLE();
+        UART2_GPIO_CLK_ENABLE();
 
         LL_GPIO_StructInit(&gpio_init);
-        gpio_init.Pin = UART1_GPIO_RX_PIN;
+        gpio_init.Pin = UART2_GPIO_RX_PIN;
         gpio_init.Mode = LL_GPIO_MODE_ALTERNATE;
         gpio_init.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
         gpio_init.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
         gpio_init.Pull = LL_GPIO_PULL_UP;
-        gpio_init.Alternate = UART1_GPIO_AF_RX;
-        LL_GPIO_Init(UART1_GPIO_PORT, &gpio_init);
+        gpio_init.Alternate = UART2_GPIO_AF_RX;
+        LL_GPIO_Init(UART2_GPIO_PORT, &gpio_init);
 
-        gpio_init.Pin = UART1_GPIO_TX_PIN;
-        gpio_init.Alternate = UART1_GPIO_AF_TX;
-        LL_GPIO_Init(UART1_GPIO_PORT, &gpio_init);
+        gpio_init.Pin = UART2_GPIO_TX_PIN;
+        gpio_init.Alternate = UART2_GPIO_AF_TX;
+        LL_GPIO_Init(UART2_GPIO_PORT, &gpio_init);
 
         // configure NVIC for USART interrupts
-        NVIC_SetPriority(UART1_IRQ, NVIC_MID_PRI);
-        NVIC_EnableIRQ(UART1_IRQ);
+        NVIC_SetPriority(UART2_IRQ, NVIC_MID_PRI);
+        NVIC_EnableIRQ(UART2_IRQ);
 
         // enable USART peripheral clock and clock source
-        UART1_CLK_ENABLE();
-        UART1_CLK_SOURCE();
+        UART2_CLK_ENABLE();
+        UART2_CLK_SOURCE();
 
         // configure USART parameters
         LL_USART_StructInit(&usart_init);
@@ -88,25 +90,25 @@ void uart1_init(
         usart_init.TransferDirection = LL_USART_DIRECTION_TX_RX;
         usart_init.HardwareFlowControl = LL_USART_HWCONTROL_NONE;
         usart_init.OverSampling = LL_USART_OVERSAMPLING_16;
-        LL_USART_Init(UART1_TYPE, &usart_init);
+        LL_USART_Init(UART2_TYPE, &usart_init);
 
-        LL_USART_Enable(UART1_TYPE);
+        LL_USART_Enable(UART2_TYPE);
 
-        LL_USART_ClearFlag_ORE(UART1_TYPE);
+        LL_USART_ClearFlag_ORE(UART2_TYPE);
 
-        LL_USART_EnableIT_RXNE(UART1_TYPE);
-        //LL_USART_EnableIT_ERROR(UART1_TYPE);
+        LL_USART_EnableIT_RXNE(UART2_TYPE);
+        //LL_USART_EnableIT_ERROR(UART2_TYPE);
 
         is_init = true;
     }
 }
 
-bool uart1_is_init(void)
+bool uart2_is_init(void)
 {
     return is_init;
 }
 
-bool uart1_get_char(
+bool uart2_get_char(
         uint8_t * const data)
 {
     bool ret = false;
@@ -120,14 +122,14 @@ bool uart1_get_char(
     return ret;
 }
 
-bool uart1_get_char_timeout(
+bool uart2_get_char_timeout(
         uint8_t * const data)
 {
     bool ret = false;
 
     if(is_init == true)
     {
-        if(xQueueReceive(rx_queue, data, UART1_RX_TIMEOUT_TICKS) == pdTRUE)
+        if(xQueueReceive(rx_queue, data, UART2_RX_TIMEOUT_TICKS) == pdTRUE)
         {
             ret = true;
         }
@@ -141,13 +143,13 @@ bool uart1_get_char_timeout(
     return ret;
 }
 
-void uart1_put_char(
+void uart2_put_char(
         const uint8_t data)
 {
-    uart1_send(&data, 1);
+    uart2_send(&data, 1);
 }
 
-void uart1_send(
+void uart2_send(
         const uint8_t * const data,
         const uint32_t size)
 {
@@ -156,11 +158,12 @@ void uart1_send(
         uint32_t i;
         for(i = 0; i < size; i += 1)
         {
-            while(LL_USART_IsActiveFlag_TXE(UART1_TYPE) == 0);
+            while(LL_USART_IsActiveFlag_TXE(UART2_TYPE) == 0);
 
-            LL_USART_TransmitData8(UART1_TYPE, data[i]);
+            LL_USART_TransmitData8(UART2_TYPE, data[i]);
+            led_toggle(LED_UART2_STATUS);
         }
 
-        while(LL_USART_IsActiveFlag_TC(UART1_TYPE) == 0);
+        while(LL_USART_IsActiveFlag_TC(UART2_TYPE) == 0);
     }
 }

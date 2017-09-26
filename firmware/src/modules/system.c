@@ -15,7 +15,7 @@
 #include "debug.h"
 #include "led.h"
 #include "uart1.h"
-//#include "uart2.h"
+#include "uart2.h"
 //#include "can1.h"
 #include "system.h"
 
@@ -47,7 +47,7 @@ static void system_task(void *params)
 
     uart1_init(UART1_BAUDRATE);
 
-    //uart2_init(UART2_BAUDRATE);
+    uart2_init(UART2_BAUDRATE);
 
     //can1_init();
 
@@ -58,7 +58,7 @@ static void system_task(void *params)
     while(1)
     {
         led_toggle(LED_SYSTEM_STATUS);
-        led_set(LED_UART1_STATUS, false);
+        led_set(LED_UART2_STATUS, false);
 
         vTaskDelay(M2T(500));
     }
