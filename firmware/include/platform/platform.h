@@ -11,4 +11,4 @@ void platform_init(void);
 
 void platform_error_handler(void);
 
-#endif  /* PLATFORM_H */
+#endif /* PLATFORM_H */

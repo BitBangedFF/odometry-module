@@ -4,6 +4,9 @@
  *
  */
 
+#ifndef DEBUG_H
+#define DEBUG_H
+
 #ifdef BUILD_TYPE_DEBUG
     #include <stdio.h>
     #define debug_init() do{ \
@@ -18,3 +21,5 @@
     #define debug_puts(s)
     #define debug_printf(f, ...)
 #endif
+
+#endif /* DEBUG_H */

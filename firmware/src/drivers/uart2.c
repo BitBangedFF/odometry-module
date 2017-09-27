@@ -15,7 +15,7 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "nvicconf.h"
-#include "debug.h"
+#include "debugio.h"
 #include "led.h"
 #include "uart2.h"
 

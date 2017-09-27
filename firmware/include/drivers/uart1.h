@@ -47,4 +47,4 @@ void uart1_send(
         const uint8_t * const data,
         const uint32_t size);
 
-#endif  /* UART1_H */
+#endif /* UART1_H */

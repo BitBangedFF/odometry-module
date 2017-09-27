@@ -47,4 +47,4 @@ void uart2_send(
         const uint8_t * const data,
         const uint32_t size);
 
-#endif  /* UART2_H */
+#endif /* UART2_H */

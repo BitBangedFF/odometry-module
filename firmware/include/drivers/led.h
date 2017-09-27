@@ -43,4 +43,4 @@ void led_toggle(
 void led_set_all(
         const bool state);
 
-#endif  /* LED_H */
+#endif /* LED_H */

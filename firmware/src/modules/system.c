@@ -12,7 +12,7 @@
 #include "semphr.h"
 #include "config.h"
 #include "nvicconf.h"
-#include "debug.h"
+#include "debugio.h"
 #include "led.h"
 #include "uart1.h"
 #include "uart2.h"

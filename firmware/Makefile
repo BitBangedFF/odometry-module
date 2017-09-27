@@ -25,6 +25,9 @@ CSOURCES+=$(shell find -L $(SRCDIR) -name '*.c')
 # Find header directories
 INC=$(shell find -L . -name '*.h' -exec dirname {} \; | uniq)
 INCLUDES=$(INC:%=-I%)
+# some of the vendor directory structure breaks the auto logic
+INCLUDES+=-Iinclude/vendor/LwIP_core
+INCLUDES+=-Iinclude/vendor/LwIP_system
 # Create object list
 OBJECTS=$(ASOURCES:%.s=%.o)
 OBJECTS+=$(CSOURCES:%.c=%.o)

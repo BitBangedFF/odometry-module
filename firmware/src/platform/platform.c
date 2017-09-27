@@ -7,7 +7,7 @@
 #include <string.h>
 #include "stm32f7xx.h"
 #include "stm32f7xx_hal.h"
-#include "debug.h"
+#include "debugio.h"
 #include "led.h"
 #include "platform.h"
 
