@@ -35,14 +35,18 @@ ENTRY(Reset_Handler)
 /* Highest address of the user mode stack */
 _estack = 0x20080000;    /* end of RAM */
 /* Generate a link error if heap and stack don't fit into RAM */
-_Min_Heap_Size = 0x200;      /* required amount of heap  */
-_Min_Stack_Size = 0x400; /* required amount of stack */
+_Min_Heap_Size = 0x800;      /* required amount of heap  */
+_Min_Stack_Size = 0x1000; /* required amount of stack */
 
 /* Specify the memory areas */
 MEMORY
 {
-FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 2048K
-RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 512K
+FLASH (rx)       : ORIGIN = 0x08000000, LENGTH = 2048K
+RAM (xrw)        : ORIGIN = 0x20000000, LENGTH = 512K
+Memory_B1(xrw)   : ORIGIN = 0x20020000, LENGTH = 0x80
+Memory_B2(xrw)   : ORIGIN = 0x20020080, LENGTH = 0x80
+Memory_B3(xrw)   : ORIGIN = 0x2007C000, LENGTH = 0x17d0
+Memory_B4(xrw)   : ORIGIN = 0x2007D7D0, LENGTH = 0x17d0
 }
 
 /* Define output sections */
@@ -114,7 +118,7 @@ SECTIONS
   _sidata = LOADADDR(.data);
 
   /* Initialized data sections goes into RAM, load LMA copy after code */
-  .data : 
+  .data :
   {
     . = ALIGN(4);
     _sdata = .;        /* create a global symbol at data start */
@@ -125,7 +129,7 @@ SECTIONS
     _edata = .;        /* define a global symbol at data end */
   } >RAM AT> FLASH
 
-  
+
   /* Uninitialized data section */
   . = ALIGN(4);
   .bss :
@@ -153,8 +157,6 @@ SECTIONS
     . = ALIGN(8);
   } >RAM
 
-  
-
   /* Remove information from the standard libraries */
   /DISCARD/ :
   {
@@ -164,6 +166,10 @@ SECTIONS
   }
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
+  .RxDecripSection : { *(.DMARxDscrTab_section) } >Memory_B1
+  .TxDescripSection : { *(.DMATxDscrTab_section) } >Memory_B2
+  .RxarraySection : { *(.Rx_Buff_section) } >Memory_B3
+  .TxarraySection : { *(.Tx_Buff_section) } >Memory_B4
 }
 
 
