@@ -74,7 +74,7 @@ void uart2_init(
         LL_GPIO_Init(UART2_GPIO_PORT, &gpio_init);
 
         // configure NVIC for USART interrupts
-        NVIC_SetPriority(UART2_IRQ, NVIC_MID_PRI);
+        NVIC_SetPriority(UART2_IRQ, NVIC_UART1_PRI);
         NVIC_EnableIRQ(UART2_IRQ);
 
         // enable USART peripheral clock and clock source

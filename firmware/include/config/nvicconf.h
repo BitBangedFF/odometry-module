@@ -7,14 +7,19 @@
 #ifndef NVICCONF_H
 #define NVICCONF_H
 
+// Note that FreeRTOS is configured with
+// configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY == 5
+
 #define NVIC_LOW_PRI  13
 #define NVIC_MID_PRI  10
 #define NVIC_HIGH_PRI 7
 
+#define NVIC_ETH_PRI        0
 #define NVIC_I2C_HIGH_PRI   3
 #define NVIC_I2C_LOW_PRI    4
 #define NVIC_TRACE_TIM_PRI  4
-#define NVIC_UART_PRI       6
+#define NVIC_UART1_PRI      7
+#define NVIC_UART2_PRI      7
 
 #define NVIC_RADIO_PRI      11
 #define NVIC_ADC_PRI        12
