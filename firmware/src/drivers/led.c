@@ -64,6 +64,18 @@ void led_set(
     }
 }
 
+void led_on(
+        const led_kind led)
+{
+    LL_GPIO_SetOutputPin(LED_GPIO_PORT, LED_PINS[led]);
+}
+
+void led_off(
+        const led_kind led)
+{
+    LL_GPIO_ResetOutputPin(LED_GPIO_PORT, LED_PINS[led]);
+}
+
 void led_toggle(
         const led_kind led)
 {

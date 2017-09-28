@@ -43,6 +43,7 @@ static void system_init(void)
 
 static void system_task(void *params)
 {
+    (void) params;
     led_init();
     led_set(LED_SYSTEM_STATUS, true);
 
@@ -61,7 +62,7 @@ static void system_task(void *params)
     while(1)
     {
         led_toggle(LED_SYSTEM_STATUS);
-        led_set(LED_UART2_STATUS, false);
+        led_off(LED_UART2_STATUS);
 
         vTaskDelay(M2T(500));
     }

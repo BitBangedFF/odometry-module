@@ -18,7 +18,7 @@
 #define LED_PIN_RED LL_GPIO_PIN_14
 
 #define LED_UART2_STATUS LED_GREEN
-#define LED_CAN1_STATUS LED_BLUE
+#define LED_ETH_STATUS LED_BLUE
 #define LED_SYSTEM_STATUS LED_RED
 #define LED_COUNT (3)
 
@@ -36,6 +36,12 @@ bool led_is_init(void);
 void led_set(
         const led_kind led,
         const bool state);
+
+void led_on(
+        const led_kind led);
+
+void led_off(
+        const led_kind led);
 
 void led_toggle(
         const led_kind led);
