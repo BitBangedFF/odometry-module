@@ -15,6 +15,34 @@
 #include "uart1.h"
 #endif
 
+/**
+  * @brief  Configure the MPU attributes as Device for  Ethernet Descriptors in the SRAM1.
+  * @note   The Base Address is 0x20020000 since this memory interface is the AXI.
+  *         The Configured Region Size is 256B (size of Rx and Tx ETH descriptors)
+  */
+static void mpu_config(void)
+{
+    MPU_Region_InitTypeDef mpu_init;
+
+    HAL_MPU_Disable();
+
+    memset(&mpu_init, 0, sizeof(mpu_init));
+    mpu_init.Enable = MPU_REGION_ENABLE;
+    mpu_init.BaseAddress = 0x20020000;
+    mpu_init.Size = MPU_REGION_SIZE_256B;
+    mpu_init.AccessPermission = MPU_REGION_FULL_ACCESS;
+    mpu_init.IsBufferable = MPU_ACCESS_BUFFERABLE;
+    mpu_init.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
+    mpu_init.IsShareable = MPU_ACCESS_SHAREABLE;
+    mpu_init.Number = MPU_REGION_NUMBER0;
+    mpu_init.TypeExtField = MPU_TEX_LEVEL0;
+    mpu_init.SubRegionDisable = 0x00;
+    mpu_init.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
+    HAL_MPU_ConfigRegion(&mpu_init);
+
+    HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
+}
+
 static void cpu_cache_enable(void)
 {
     SCB_EnableICache();
