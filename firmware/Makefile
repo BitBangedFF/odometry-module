@@ -50,6 +50,8 @@ LDSCRIPT_DEBUG=linker/stm32f7_link.ld
 LDSCRIPT=linker/stm32f7_link.ld
 LDFLAGS=-T $(LDSCRIPT) --specs=nosys.specs $(MCFLAGS)
 LDFLAGS+=../vendor/STM32Cube_FW_F7_V1.8.0/Drivers/CMSIS/Lib/GCC/libarm_cortexM7lfsp_math.a
+# print out memory usage
+LDFLAGS+=-Wl,--print-memory-usage
 
 ###
 # Optimizations

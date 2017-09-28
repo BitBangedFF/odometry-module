@@ -17,6 +17,7 @@
 #include "uart1.h"
 #include "uart2.h"
 //#include "can1.h"
+#include "udpserver.h"
 #include "system.h"
 
 static xSemaphoreHandle system_ready_mutex;
@@ -52,6 +53,8 @@ static void system_task(void *params)
     //can1_init();
 
     system_init();
+
+    udpserver_start();
 
     signal_ready_to_start();
 
