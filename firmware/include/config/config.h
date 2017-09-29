@@ -10,14 +10,17 @@
 // task priorities, higher number == higher priority
 #define SYSTEM_TASK_PRI (2)
 #define UDPSERVER_INIT_TASK_PRI (1)
+#define UDPSERVER_IO_TASK_PRI (3)
 
 // task stack sizes
 #define SYSTEM_TASK_STACKSIZE (2 * configMINIMAL_STACK_SIZE)
 #define UDPSERVER_INIT_TASK_STACKSIZE (5 * configMINIMAL_STACK_SIZE)
+#define UDPSERVER_IO_TASK_STACKSIZE (5 * configMINIMAL_STACK_SIZE)
 
 // task names
 #define SYSTEM_TASK_NAME "SYSTEM"
 #define UDPSERVER_INIT_TASK_NAME "UDPSERVER-INIT"
+#define UDPSERVER_IO_TASK_NAME "UDPSERVER-IO"
 
 #define IP_ADDR0 (192)
 #define IP_ADDR1 (168)

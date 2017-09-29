@@ -94,29 +94,31 @@ static void udpserver_init(void)
         // inialize the lwip stack
         netif_config();
 
-        // start the UDP server IO task
-        //udpserver_io_start?
-
         notify(&gnetif);
 
         is_init = true;
     }
 
     debug_puts("udpserver_init");
+    debug_printf(
+            "IP %u.%u.%u.%u:%u\r\n",
+            IP_ADDR0,
+            IP_ADDR1,
+            IP_ADDR2,
+            IP_ADDR3,
+            UDPSERVER_PORT);
 }
 
-static void udpserver_init_task(void *params)
+static void io_task(void *params)
 {
     (void) params;
     err_t nc_err;
+    struct netbuf *io_buff;
+    const ip_addr_t *dst_addr;
+    u16_t dst_port;
 
-    led_off(LED_ETH_STATUS);
+    debug_puts(UDPSERVER_IO_TASK_NAME" started");
 
-    system_wait_for_start();
-
-    udpserver_init();
-
-    /*
     conn = netconn_new(NETCONN_UDP);
 
     if(conn != NULL)
@@ -129,7 +131,58 @@ static void udpserver_init_task(void *params)
             conn = NULL;
         }
     }
-    */
+
+    while(1)
+    {
+        vTaskDelay(M2T(1000));
+
+        if(conn != NULL)
+        {
+            debug_puts("ready for UDP IO");
+
+            io_buff = NULL;
+            nc_err = netconn_recv(conn, &io_buff);
+
+            if(nc_err == ERR_OK)
+            {
+                dst_addr = netbuf_fromaddr(io_buff);
+                dst_port = netbuf_fromport(io_buff);
+
+                nc_err = netconn_connect(conn, dst_addr, dst_port);
+            }
+
+            if(nc_err == ERR_OK)
+            {
+                io_buff->addr.addr = 0;
+                nc_err = netconn_send(conn, io_buff);
+
+                netbuf_delete(io_buff);
+            }
+        }
+    };
+}
+
+static void init_task(void *params)
+{
+    (void) params;
+
+    led_off(LED_ETH_STATUS);
+
+    system_wait_for_start();
+
+    udpserver_init();
+
+    // start the UDP server IO task
+    if(netif_is_link_up(&gnetif) != 0)
+    {
+        (void) xTaskCreate(
+                io_task,
+                UDPSERVER_IO_TASK_NAME,
+                UDPSERVER_IO_TASK_STACKSIZE,
+                NULL,
+                UDPSERVER_IO_TASK_PRI,
+                NULL);
+    }
 
     while(1)
     {
@@ -166,7 +219,7 @@ void ethernetif_notify_conn_changed(struct netif *netif)
 void udpserver_start(void)
 {
     (void) xTaskCreate(
-            udpserver_init_task,
+            init_task,
             UDPSERVER_INIT_TASK_NAME,
             UDPSERVER_INIT_TASK_STACKSIZE,
             NULL,

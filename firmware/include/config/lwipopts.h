@@ -92,6 +92,7 @@ a lot of data that needs to be copied, this should be set high. */
 
 /* ---------- IPv4 options ---------- */
 #define LWIP_IPV4                1
+#define LWIP_IPV6               0
 
 /* ---------- TCP options ---------- */
 #define LWIP_TCP                0
@@ -136,8 +137,10 @@ a lot of data that needs to be copied, this should be set high. */
 /* LWIP_NETIF_LINK_CALLBACK==1: Support a callback function from an interface
  * whenever the link changes (i.e., link down)
  */
-#define LWIP_NETIF_LINK_CALLBACK 1
-//#define LWIP_NETIF_STATUS_CALLBACK 1
+#define LWIP_NETIF_LINK_CALLBACK    1
+#define LWIP_NETIF_STATUS_CALLBACK  0
+#define LWIP_NETIF_REMOVE_CALLBACK  0
+#define LWIP_NETIF_HOSTNAME         0
 
 /*
    --------------------------------------
@@ -195,6 +198,7 @@ The STM32F7xx allows computing and verifying the IP, UDP, TCP and ICMP checksums
  * LWIP_NETCONN==1: Enable Netconn API (require to use api_lib.c)
  */
 #define LWIP_NETCONN                    1
+#define LWIP_NETCONN_FULLDUPLEX         0
 
 /*
    ------------------------------------
