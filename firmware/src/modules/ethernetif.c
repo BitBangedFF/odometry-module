@@ -615,6 +615,24 @@ void ethernetif_update_config(struct netif *netif)
   ethernetif_notify_conn_changed(netif);
 }
 
+uint8_t ethernetif_link_status(void)
+{
+    uint32_t regvalue = 0;
+
+    HAL_ETH_ReadPHYRegister(&EthHandle, PHY_BSR, &regvalue);
+
+    if((regvalue & PHY_LINKED_STATUS) != (uint16_t) RESET)
+    {
+        regvalue = 1;
+    }
+    else
+    {
+        regvalue = 0;
+    }
+
+    return (uint8_t) regvalue;
+}
+
 /**
   * @brief  Returns the current time in milliseconds
   *         when LWIP_TIMERS == 1 and NO_SYS == 1

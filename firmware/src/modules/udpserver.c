@@ -64,6 +64,26 @@ static void netif_config(void)
     netif_set_link_callback(&gnetif, &ethernetif_update_config);
 }
 
+static void update_link(struct netif * const netif)
+{
+    const uint8_t link_status = ethernetif_link_status();
+
+    if(link_status != 0)
+    {
+        if(netif_is_link_up(&gnetif) == 0)
+        {
+            netif_set_link_up(netif);
+        }
+    }
+    else
+    {
+        if(netif_is_link_up(&gnetif) != 0)
+        {
+            netif_set_link_down(netif);
+        }
+    }
+}
+
 static void udpserver_init(void)
 {
     if(is_init == false)
@@ -114,7 +134,8 @@ static void udpserver_init_task(void *params)
     while(1)
     {
         vTaskDelay(M2T(500));
-        notify(&gnetif);
+
+        update_link(&gnetif);
     }
 }
 
