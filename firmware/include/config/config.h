@@ -19,19 +19,21 @@
 #define SYSTEM_TASK_NAME "SYSTEM"
 #define UDPSERVER_INIT_TASK_NAME "UDPSERVER-INIT"
 
-#define IP_ADDR0 192
-#define IP_ADDR1 168
-#define IP_ADDR2 1
-#define IP_ADDR3 39
+#define IP_ADDR0 (192)
+#define IP_ADDR1 (168)
+#define IP_ADDR2 (1)
+#define IP_ADDR3 (39)
 
-#define NETMASK_ADDR0 255
-#define NETMASK_ADDR1 255
-#define NETMASK_ADDR2 255
-#define NETMASK_ADDR3 0
+#define NETMASK_ADDR0 (255)
+#define NETMASK_ADDR1 (255)
+#define NETMASK_ADDR2 (255)
+#define NETMASK_ADDR3 (0)
 
-#define GW_ADDR0 192
-#define GW_ADDR1 168
-#define GW_ADDR2 1
-#define GW_ADDR3 1
+#define GW_ADDR0 (192)
+#define GW_ADDR1 (168)
+#define GW_ADDR2 (1)
+#define GW_ADDR3 (1)
+
+#define UDPSERVER_PORT (57319)
 
 #endif /* CONFIG_H */

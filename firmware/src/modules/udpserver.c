@@ -21,6 +21,10 @@
 #include "ethernetif.h"
 #include "udpserver.h"
 
+static struct netconn *conn;
+static ip_addr_t ipaddr;
+static ip_addr_t netmask;
+static ip_addr_t gw;
 static struct netif gnetif;
 static bool is_init = false;
 
@@ -38,10 +42,6 @@ static void notify(struct netif * const netif)
 
 static void netif_config(void)
 {
-    ip_addr_t ipaddr;
-    ip_addr_t netmask;
-    ip_addr_t gw;
-
     IP_ADDR4(&ipaddr,IP_ADDR0,IP_ADDR1,IP_ADDR2,IP_ADDR3);
     IP_ADDR4(&netmask,NETMASK_ADDR0,NETMASK_ADDR1,NETMASK_ADDR2,NETMASK_ADDR3);
     IP_ADDR4(&gw,GW_ADDR0,GW_ADDR1,GW_ADDR2,GW_ADDR3);
@@ -60,6 +60,8 @@ static void netif_config(void)
     {
         netif_set_down(&gnetif);
     }
+
+    netif_set_link_callback(&gnetif, &ethernetif_update_config);
 }
 
 static void udpserver_init(void)
@@ -73,7 +75,7 @@ static void udpserver_init(void)
         netif_config();
 
         // start the UDP server IO task
-        //udpserver_start?
+        //udpserver_io_start?
 
         notify(&gnetif);
 
@@ -86,6 +88,7 @@ static void udpserver_init(void)
 static void udpserver_init_task(void *params)
 {
     (void) params;
+    err_t nc_err;
 
     led_off(LED_ETH_STATUS);
 
@@ -93,11 +96,50 @@ static void udpserver_init_task(void *params)
 
     udpserver_init();
 
+    /*
+    conn = netconn_new(NETCONN_UDP);
+
+    if(conn != NULL)
+    {
+        nc_err = netconn_bind(conn, IP_ADDR_ANY, (uint16_t) UDPSERVER_PORT);
+
+        if(nc_err != ERR_OK)
+        {
+            netconn_delete(conn);
+            conn = NULL;
+        }
+    }
+    */
+
     while(1)
     {
         vTaskDelay(M2T(500));
         notify(&gnetif);
     }
+}
+
+void ethernetif_notify_conn_changed(struct netif *netif)
+{
+    if(netif_is_link_up(netif) != 0)
+    {
+        debug_puts("network connected");
+
+        IP_ADDR4(&ipaddr,IP_ADDR0,IP_ADDR1,IP_ADDR2,IP_ADDR3);
+        IP_ADDR4(&netmask,NETMASK_ADDR0,NETMASK_ADDR1,NETMASK_ADDR2,NETMASK_ADDR3);
+        IP_ADDR4(&gw,GW_ADDR0,GW_ADDR1,GW_ADDR2,GW_ADDR3);
+
+        netif_set_addr(netif, &ipaddr , &netmask, &gw);
+
+        netif_set_up(netif);
+    }
+    else
+    {
+        debug_puts("network disconnected");
+
+        netif_set_down(netif);
+    }
+
+    notify(netif);
 }
 
 void udpserver_start(void)

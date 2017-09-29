@@ -22,12 +22,19 @@ SRCDIR=src
 # Find source files
 ASOURCES=$(shell find -L $(SRCDIR) -name '*.s')
 CSOURCES+=$(shell find -L $(SRCDIR) -name '*.c')
-# Find header directories
-INC=$(shell find -L . -name '*.h' -exec dirname {} \; | uniq)
+
+#INC=$(shell find -L . -name '*.h' -exec dirname {} \; | uniq)
+
+# Find header directories for the project (not the vendor packages)
+INC=$(shell find -L . -path ./include/vendor -prune -o -path ./src/vendor -prune -o -name '*.h' -exec dirname {} \; | uniq)
+# Add vendor include directories
+INC+=$(shell find -L ./include/vendor -name '*.h' -exec dirname {} \; | uniq)
+INC+=$(shell find -L ./src/vendor -name '*.h' -exec dirname {} \; | uniq)
+# Some of the vendor directory structure breaks the auto logic
+INC+=./include/vendor/LwIP_core
+INC+=./include/vendor/LwIP_system
 INCLUDES=$(INC:%=-I%)
-# some of the vendor directory structure breaks the auto logic
-INCLUDES+=-Iinclude/vendor/LwIP_core
-INCLUDES+=-Iinclude/vendor/LwIP_system
+
 # Create object list
 OBJECTS=$(ASOURCES:%.s=%.o)
 OBJECTS+=$(CSOURCES:%.c=%.o)

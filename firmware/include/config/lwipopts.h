@@ -136,7 +136,8 @@ a lot of data that needs to be copied, this should be set high. */
 /* LWIP_NETIF_LINK_CALLBACK==1: Support a callback function from an interface
  * whenever the link changes (i.e., link down)
  */
-#define LWIP_NETIF_LINK_CALLBACK        1
+#define LWIP_NETIF_LINK_CALLBACK 1
+//#define LWIP_NETIF_STATUS_CALLBACK 1
 
 /*
    --------------------------------------
