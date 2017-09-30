@@ -236,6 +236,15 @@ The STM32F7xx allows computing and verifying the IP, UDP, TCP and ICMP checksums
 #define TCPIP_THREAD_PRIO               osPriorityHigh
 
 
+#ifdef BUILD_TYPE_DEBUG
+#define LWIP_DEBUG          1
+#define LWIP_DBG_MIN_LEVEL  LWIP_DBG_LEVEL_ALL
+#define UDP_DEBUG           LWIP_DBG_ON
+#define NETIF_DEBUG         LWIP_DBG_ON
+#define IP_DEBUG            LWIP_DBG_ON
+//#define ETHARP_DEBUG        LWIP_DBG_ON
+#endif
+
 
 #endif /* __LWIPOPTS_H__ */
 

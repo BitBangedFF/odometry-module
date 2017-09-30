@@ -121,9 +121,31 @@ static void io_task(void *params)
 
     conn = netconn_new(NETCONN_UDP);
 
+    /*
     if(conn != NULL)
     {
         nc_err = netconn_bind(conn, IP_ADDR_ANY, (uint16_t) UDPSERVER_PORT);
+
+        if(nc_err != ERR_OK)
+        {
+            netconn_delete(conn);
+            conn = NULL;
+        }
+    }
+    */
+
+    io_buff = netbuf_new();
+    //uint8_t * const data = netbuf_alloc(io_buff, 32);
+
+    const uint8_t data[32];
+    (void) netbuf_ref(io_buff, &data[0], sizeof(data));
+
+    if(conn != NULL)
+    {
+        ip_addr_t tmp_addr;
+        IP_ADDR4(&tmp_addr,192,168,1,164);
+        //nc_err = netconn_connect(conn, IP_ADDR_ANY, (uint16_t) UDPSERVER_PORT);
+        nc_err = netconn_connect(conn, &tmp_addr, (uint16_t) UDPSERVER_PORT);
 
         if(nc_err != ERR_OK)
         {
@@ -136,6 +158,18 @@ static void io_task(void *params)
     {
         vTaskDelay(M2T(1000));
 
+        if(conn != NULL)
+        {
+            nc_err = netconn_send(conn, io_buff);
+
+            if(nc_err == ERR_OK)
+            {
+                debug_puts("send failed");
+                led_toggle(LED_GREEN);
+            }
+        }
+
+        /*
         if(conn != NULL)
         {
             debug_puts("ready for UDP IO");
@@ -159,6 +193,7 @@ static void io_task(void *params)
                 netbuf_delete(io_buff);
             }
         }
+        */
     };
 }
 
