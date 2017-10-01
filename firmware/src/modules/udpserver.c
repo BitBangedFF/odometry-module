@@ -167,7 +167,6 @@ static void io_task(void *params)
             if(nc_err != ERR_OK)
             {
                 debug_puts("netconn_send failed");
-                led_toggle(LED_GREEN);
             }
         }
     };
