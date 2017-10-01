@@ -121,7 +121,6 @@ static void io_task(void *params)
 
     conn = netconn_new(NETCONN_UDP);
 
-    /*
     if(conn != NULL)
     {
         nc_err = netconn_bind(conn, IP_ADDR_ANY, (uint16_t) UDPSERVER_PORT);
@@ -132,20 +131,22 @@ static void io_task(void *params)
             conn = NULL;
         }
     }
-    */
 
     io_buff = netbuf_new();
-    //uint8_t * const data = netbuf_alloc(io_buff, 32);
 
-    const uint8_t data[32];
+    uint8_t data[12];
+    
+    uint8_t idx;
+    for(idx = 0; idx < 12; idx += 1)
+    {
+        data[idx] = idx;
+    }
+
     (void) netbuf_ref(io_buff, &data[0], sizeof(data));
 
     if(conn != NULL)
     {
-        ip_addr_t tmp_addr;
-        IP_ADDR4(&tmp_addr,192,168,1,164);
-        //nc_err = netconn_connect(conn, IP_ADDR_ANY, (uint16_t) UDPSERVER_PORT);
-        nc_err = netconn_connect(conn, &tmp_addr, (uint16_t) UDPSERVER_PORT);
+        nc_err = netconn_connect(conn, IP_ADDR_BROADCAST, (uint16_t) UDPSERVER_PORT);
 
         if(nc_err != ERR_OK)
         {
@@ -160,40 +161,15 @@ static void io_task(void *params)
 
         if(conn != NULL)
         {
+            debug_puts("upd-tx");
             nc_err = netconn_send(conn, io_buff);
 
-            if(nc_err == ERR_OK)
+            if(nc_err != ERR_OK)
             {
-                debug_puts("send failed");
+                debug_puts("netconn_send failed");
                 led_toggle(LED_GREEN);
             }
         }
-
-        /*
-        if(conn != NULL)
-        {
-            debug_puts("ready for UDP IO");
-
-            io_buff = NULL;
-            nc_err = netconn_recv(conn, &io_buff);
-
-            if(nc_err == ERR_OK)
-            {
-                dst_addr = netbuf_fromaddr(io_buff);
-                dst_port = netbuf_fromport(io_buff);
-
-                nc_err = netconn_connect(conn, dst_addr, dst_port);
-            }
-
-            if(nc_err == ERR_OK)
-            {
-                io_buff->addr.addr = 0;
-                nc_err = netconn_send(conn, io_buff);
-
-                netbuf_delete(io_buff);
-            }
-        }
-        */
     };
 }
 

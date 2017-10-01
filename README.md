@@ -1,6 +1,9 @@
 # odometry-module
 High-level system monitoring and odometry module running in FreeRTOS on the NUCLEO-F767ZI STM32F767ZIT6 (part of my cbr-hacks).
 
+READTHIS:
+  * http://lwip.wikia.com/wiki/Maximizing_throughput
+
 TODO:
   * Document the toolchain in use (currently gcc-arm-none-eabi-6-2017-q2-update-linux.tar.bz2)
   * Figure out what I want the FreeRTOS configASSERT() macro to do

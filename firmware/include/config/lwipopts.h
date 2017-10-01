@@ -118,7 +118,7 @@ a lot of data that needs to be copied, this should be set high. */
 
 
 /* ---------- ICMP options ---------- */
-#define LWIP_ICMP                       0
+#define LWIP_ICMP               0
 
 
 /* ---------- DHCP options ---------- */
@@ -128,6 +128,8 @@ a lot of data that needs to be copied, this should be set high. */
 /* ---------- UDP options ---------- */
 #define LWIP_UDP                1
 #define UDP_TTL                 255
+
+#define LWIP_RAW                0
 
 
 /* ---------- Statistics options ---------- */
@@ -141,6 +143,7 @@ a lot of data that needs to be copied, this should be set high. */
 #define LWIP_NETIF_STATUS_CALLBACK  0
 #define LWIP_NETIF_REMOVE_CALLBACK  0
 #define LWIP_NETIF_HOSTNAME         0
+#define LWIP_NETIF_HWADDRHINT       0
 
 /*
    --------------------------------------
@@ -153,7 +156,8 @@ The STM32F7xx allows computing and verifying the IP, UDP, TCP and ICMP checksums
  - To use this feature let the following define uncommented.
  - To disable it and process by CPU comment the  the checksum.
 */
-#define CHECKSUM_BY_HARDWARE 
+#define CHECKSUM_BY_HARDWARE 1
+//#define LWIP_CHECKSUM_ON_COPY 1
 
 
 #ifdef CHECKSUM_BY_HARDWARE
@@ -235,16 +239,18 @@ The STM32F7xx allows computing and verifying the IP, UDP, TCP and ICMP checksums
 #define DEFAULT_THREAD_STACKSIZE        500
 #define TCPIP_THREAD_PRIO               osPriorityHigh
 
-
+/*
 #ifdef BUILD_TYPE_DEBUG
 #define LWIP_DEBUG          1
 #define LWIP_DBG_MIN_LEVEL  LWIP_DBG_LEVEL_ALL
 #define UDP_DEBUG           LWIP_DBG_ON
 #define NETIF_DEBUG         LWIP_DBG_ON
 #define IP_DEBUG            LWIP_DBG_ON
-//#define ETHARP_DEBUG        LWIP_DBG_ON
+#define INET_DEBUG          LWIP_DBG_ON
+#define API_DEBUG           LWIP_DBG_ON
+#define ETHARP_DEBUG        LWIP_DBG_ON
 #endif
-
+*/
 
 #endif /* __LWIPOPTS_H__ */
 
