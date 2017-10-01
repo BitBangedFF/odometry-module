@@ -114,23 +114,10 @@ static void io_task(void *params)
     (void) params;
     err_t nc_err;
     struct netbuf *io_buff;
-    const ip_addr_t *dst_addr;
-    u16_t dst_port;
 
     debug_puts(UDPSERVER_IO_TASK_NAME" started");
 
     conn = netconn_new(NETCONN_UDP);
-
-    if(conn != NULL)
-    {
-        nc_err = netconn_bind(conn, IP_ADDR_ANY, (uint16_t) UDPSERVER_PORT);
-
-        if(nc_err != ERR_OK)
-        {
-            netconn_delete(conn);
-            conn = NULL;
-        }
-    }
 
     io_buff = netbuf_new();
 
@@ -144,17 +131,6 @@ static void io_task(void *params)
 
     (void) netbuf_ref(io_buff, &data[0], sizeof(data));
 
-    if(conn != NULL)
-    {
-        nc_err = netconn_connect(conn, IP_ADDR_BROADCAST, (uint16_t) UDPSERVER_PORT);
-
-        if(nc_err != ERR_OK)
-        {
-            netconn_delete(conn);
-            conn = NULL;
-        }
-    }
-
     while(1)
     {
         vTaskDelay(M2T(1000));
@@ -162,7 +138,12 @@ static void io_task(void *params)
         if(conn != NULL)
         {
             debug_puts("upd-tx");
-            nc_err = netconn_send(conn, io_buff);
+
+            nc_err = netconn_sendto(
+                    conn,
+                    io_buff,
+                    IP_ADDR_BROADCAST,
+                    (u16_t) UDPSERVER_PORT);
 
             if(nc_err != ERR_OK)
             {
