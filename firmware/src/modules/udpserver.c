@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 #include "stm32f7xx_hal.h"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -19,13 +20,19 @@
 #include "led.h"
 #include "system.h"
 #include "ethernetif.h"
+#include "udp_protocol.h"
 #include "udpserver.h"
+
+static uint8_t tx_buffer[UP_HEADER_SIZE+UP_MSG_DATA_SIZE];
+static up_header * const tx_header = (up_header*) &tx_buffer[0];
+static up_msg_data * const tx_msg_data = (up_msg_data*) &tx_buffer[UP_HEADER_SIZE];
 
 static struct netconn *conn;
 static ip_addr_t ipaddr;
 static ip_addr_t netmask;
 static ip_addr_t gw;
 static struct netif gnetif;
+
 static bool is_init = false;
 
 static void notify(struct netif * const netif)
@@ -88,6 +95,13 @@ static void udpserver_init(void)
 {
     if(is_init == false)
     {
+        memset(&tx_buffer[0], 0, sizeof(tx_buffer));
+
+        tx_header->version_major = UP_VERSION_MAJOR;
+        tx_header->version_minor = UP_VERSION_MINOR;
+        tx_header->msg_type = UP_MSG_TYPE_DATA;
+        tx_header->msg_size = UP_MSG_DATA_SIZE;
+
         // create tcp_ip stack thread
         tcpip_init(NULL, NULL);
 
@@ -119,36 +133,63 @@ static void io_task(void *params)
 
     conn = netconn_new(NETCONN_UDP);
 
-    io_buff = netbuf_new();
-
-    uint8_t data[12];
-    
-    uint8_t idx;
-    for(idx = 0; idx < 12; idx += 1)
+    if(conn != NULL)
     {
-        data[idx] = idx;
+        nc_err = netconn_bind(conn, IP_ADDR_ANY, (uint16_t) UDPSERVER_PORT);
+
+        if(nc_err != ERR_OK)
+        {
+            netconn_delete(conn);
+            conn = NULL;
+        }
     }
 
-    (void) netbuf_ref(io_buff, &data[0], sizeof(data));
+    if(conn != NULL)
+    {
+        nc_err = netconn_connect(conn, IP_ADDR_BROADCAST, (uint16_t) UDPSERVER_PORT);
+
+        if(nc_err != ERR_OK)
+        {
+            netconn_delete(conn);
+            conn = NULL;
+        }
+    }
+
+    //io_buff = netbuf_new();
+
+    /*
+    (void) netbuf_ref(
+            io_buff,
+            &tx_buffer[0],
+            tx_header->msg_size+UP_HEADER_SIZE);
+    */
 
     while(1)
     {
         vTaskDelay(M2T(1000));
 
+        io_buff = netbuf_new();
+
+        (void) netbuf_ref(
+                io_buff,
+                &tx_buffer[0],
+                tx_header->msg_size+UP_HEADER_SIZE);
+
         if(conn != NULL)
         {
             debug_puts("upd-tx");
 
-            nc_err = netconn_sendto(
-                    conn,
-                    io_buff,
-                    IP_ADDR_BROADCAST,
-                    (u16_t) UDPSERVER_PORT);
+            nc_err = netconn_send(conn, io_buff);
 
             if(nc_err != ERR_OK)
             {
                 debug_puts("netconn_send failed");
             }
+        }
+
+        if(io_buff != NULL)
+        {
+            netbuf_delete(io_buff);
         }
     };
 }
