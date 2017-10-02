@@ -9,8 +9,7 @@ TODO:
   * Figure out what I want the FreeRTOS configASSERT() macro to do
   * Migrate to use the MPU (memory protection unit) FreeRTOS API/implementation
   * Migrate FreeRTOS API usages to use the static allocation scheme
-  * Integrate the LwIP port provided from the STM32Cube package
   * Migrate the vendor packages to a git repo and make them a submodule of this repo
-  * Handle error bits in the IRQ receivers (like in UART1 driver)
+  * Handle error bits in the IRQ receivers (like in UART drivers)
   * Do I need some sort of mutual exclusion around the UART1/debug output if used in multiple tasks (or just queue up the tx data)?
   * Write my own `src/modules/ethernetif.c` implementation
