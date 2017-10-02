@@ -23,6 +23,8 @@
 #include "udp_protocol.h"
 #include "udpserver.h"
 
+static const TickType_t UDP_TX_FREQ = M2T(1000);
+
 static uint8_t tx_buffer[UP_HEADER_SIZE+UP_MSG_DATA_SIZE];
 static up_header * const tx_header = (up_header*) &tx_buffer[0];
 static up_msg_data * const tx_msg_data = (up_msg_data*) &tx_buffer[UP_HEADER_SIZE];
@@ -95,13 +97,6 @@ static void udpserver_init(void)
 {
     if(is_init == false)
     {
-        memset(&tx_buffer[0], 0, sizeof(tx_buffer));
-
-        tx_header->version_major = UP_VERSION_MAJOR;
-        tx_header->version_minor = UP_VERSION_MINOR;
-        tx_header->msg_type = UP_MSG_TYPE_DATA;
-        tx_header->msg_size = UP_MSG_DATA_SIZE;
-
         // create tcp_ip stack thread
         tcpip_init(NULL, NULL);
 
@@ -126,10 +121,18 @@ static void udpserver_init(void)
 static void io_task(void *params)
 {
     (void) params;
+    TickType_t last_wake_time;
     err_t nc_err;
     struct netbuf *io_buff;
 
     debug_puts(UDPSERVER_IO_TASK_NAME" started");
+
+    memset(&tx_buffer[0], 0, sizeof(tx_buffer));
+
+    tx_header->version_major = UP_VERSION_MAJOR;
+    tx_header->version_minor = UP_VERSION_MINOR;
+    tx_header->msg_type = UP_MSG_TYPE_DATA;
+    tx_header->msg_size = UP_MSG_DATA_SIZE;
 
     conn = netconn_new(NETCONN_UDP);
 
@@ -155,29 +158,22 @@ static void io_task(void *params)
         }
     }
 
-    //io_buff = netbuf_new();
+    io_buff = netbuf_new();
 
-    /*
     (void) netbuf_ref(
             io_buff,
             &tx_buffer[0],
             tx_header->msg_size+UP_HEADER_SIZE);
-    */
+
+    last_wake_time = xTaskGetTickCount();
 
     while(1)
     {
-        vTaskDelay(M2T(1000));
-
-        io_buff = netbuf_new();
-
-        (void) netbuf_ref(
-                io_buff,
-                &tx_buffer[0],
-                tx_header->msg_size+UP_HEADER_SIZE);
+        vTaskDelayUntil(&last_wake_time, UDP_TX_FREQ);
 
         if(conn != NULL)
         {
-            debug_puts("upd-tx");
+            debug_puts("udp-tx");
 
             nc_err = netconn_send(conn, io_buff);
 
@@ -185,11 +181,6 @@ static void io_task(void *params)
             {
                 debug_puts("netconn_send failed");
             }
-        }
-
-        if(io_buff != NULL)
-        {
-            netbuf_delete(io_buff);
         }
     };
 }
