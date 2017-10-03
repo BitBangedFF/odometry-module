@@ -195,17 +195,13 @@ static void init_task(void *params)
 
     udpserver_init();
 
-    // start the UDP server IO task
-    if(netif_is_link_up(&gnetif) != 0)
-    {
-        (void) xTaskCreate(
-                io_task,
-                UDPSERVER_IO_TASK_NAME,
-                UDPSERVER_IO_TASK_STACKSIZE,
-                NULL,
-                UDPSERVER_IO_TASK_PRI,
-                NULL);
-    }
+    (void) xTaskCreate(
+            io_task,
+            UDPSERVER_IO_TASK_NAME,
+            UDPSERVER_IO_TASK_STACKSIZE,
+            NULL,
+            UDPSERVER_IO_TASK_PRI,
+            NULL);
 
     while(1)
     {
