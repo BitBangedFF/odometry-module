@@ -111,8 +111,8 @@ uint8_t Tx_Buff[ETH_TXBUFNB][ETH_TX_BUF_SIZE] __attribute__((section(".TxarraySe
 
 #endif
 
-/* Semaphore to signal incoming packets */
-static osSemaphoreId s_xSemaphore = NULL;
+/* Semaphore (using native task notifications) to signal incoming packets */
+static TaskHandle_t task_to_notify = NULL;
 
 /* Global Ethernet handle*/
 static ETH_HandleTypeDef EthHandle;
@@ -199,7 +199,13 @@ void HAL_ETH_MspInit(ETH_HandleTypeDef *heth)
 void HAL_ETH_RxCpltCallback(ETH_HandleTypeDef *heth)
 {
     (void) heth;
-    osSemaphoreRelease(s_xSemaphore);
+    portBASE_TYPE higher_priority_task_woken = pdFALSE;
+
+    vTaskNotifyGiveFromISR(
+            task_to_notify,
+            &higher_priority_task_woken);
+
+    portYIELD_FROM_ISR(higher_priority_task_woken);
 }
 
 /*******************************************************************************
@@ -256,13 +262,9 @@ static void low_level_init(struct netif *netif)
   /* Accept broadcast address and ARP traffic */
   netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP;
 
-  /* create a binary semaphore used for informing ethernetif of frame reception */
-  osSemaphoreDef(SEM);
-  s_xSemaphore = osSemaphoreCreate(osSemaphore(SEM) , 1 );
-
   /* create the task that handles the ETH_MAC */
   osThreadDef(EthIf, ethernetif_input, osPriorityRealtime, 0, INTERFACE_THREAD_STACK_SIZE);
-  osThreadCreate (osThread(EthIf), netif);
+  task_to_notify = osThreadCreate (osThread(EthIf), netif);
 
   /* Enable MAC and DMA transmission and reception */
   HAL_ETH_Start(&EthHandle);
@@ -472,7 +474,9 @@ static void ethernetif_input( void const * argument )
 
   for( ;; )
   {
-    if (osSemaphoreWait( s_xSemaphore, TIME_WAITING_FOR_INPUT)==osOK)
+    const uint32_t status = ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+    if(status == 1)
     {
       do
       {
