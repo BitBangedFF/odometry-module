@@ -23,8 +23,11 @@
 #include "udp_protocol.h"
 #include "udpserver.h"
 
-static const TickType_t UDP_TX_FREQ = M2T(1000);
+static const TickType_t UDP_TX_FREQ = M2T(100);
+static const TickType_t LINK_STATUS_FREQ = M2T(500);
+static const TickType_t TX_MUTEX_TIMEOUT = M2T(10);
 
+static SemaphoreHandle_t tx_mutex = NULL;
 static uint8_t tx_buffer[UP_HEADER_SIZE+UP_MSG_DATA_SIZE];
 static up_header * const tx_header = (up_header*) &tx_buffer[0];
 static up_msg_data * const tx_msg_data = (up_msg_data*) &tx_buffer[UP_HEADER_SIZE];
@@ -97,6 +100,8 @@ static void udpserver_init(void)
 {
     if(is_init == false)
     {
+        tx_mutex = xSemaphoreCreateMutex();
+
         // create tcp_ip stack thread
         tcpip_init(NULL, NULL);
 
@@ -142,6 +147,7 @@ static void io_task(void *params)
 
         if(nc_err != ERR_OK)
         {
+            debug_puts("netconn_bind failed");
             netconn_delete(conn);
             conn = NULL;
         }
@@ -153,6 +159,7 @@ static void io_task(void *params)
 
         if(nc_err != ERR_OK)
         {
+            debug_puts("netconn_connect failed");
             netconn_delete(conn);
             conn = NULL;
         }
@@ -173,13 +180,16 @@ static void io_task(void *params)
 
         if(conn != NULL)
         {
-            debug_puts("udp-tx");
-
-            nc_err = netconn_send(conn, io_buff);
-
-            if(nc_err != ERR_OK)
+            if(xSemaphoreTake(tx_mutex, TX_MUTEX_TIMEOUT) == pdTRUE)
             {
-                debug_puts("netconn_send failed");
+                nc_err = netconn_send(conn, io_buff);
+
+                xSemaphoreGive(tx_mutex);
+
+                if(nc_err != ERR_OK)
+                {
+                    debug_puts("netconn_send failed");
+                }
             }
         }
     };
@@ -188,6 +198,7 @@ static void io_task(void *params)
 static void init_task(void *params)
 {
     (void) params;
+    TickType_t last_wake_time;
 
     led_off(LED_ETH_STATUS);
 
@@ -203,9 +214,14 @@ static void init_task(void *params)
             UDPSERVER_IO_TASK_PRI,
             NULL);
 
+    last_wake_time = xTaskGetTickCount();
+
     while(1)
     {
-        vTaskDelay(M2T(500));
+        // TODO - use this task to drain the queue
+        // or another task, and keep this one idle/led-updates
+
+        vTaskDelayUntil(&last_wake_time, LINK_STATUS_FREQ);
 
         update_link(&gnetif);
     }
