@@ -126,6 +126,8 @@ static void system_clock_config(void)
 
 void platform_init(void)
 {
+    mpu_config();
+
     cpu_cache_enable();
 
     HAL_Init();

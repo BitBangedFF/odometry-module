@@ -19,7 +19,7 @@
 #include "led.h"
 #include "uart1.h"
 
-static xQueueHandle rx_queue;
+static xQueueHandle rx_queue = NULL;
 static bool is_init = false;
 
 void __attribute__((used)) UART1_IRQ_HANDLER(void)

@@ -20,7 +20,9 @@
 #include "udpserver.h"
 #include "system.h"
 
-static xSemaphoreHandle system_ready_mutex;
+static const TickType_t SYS_UPDATE_FREQ = M2T(500);
+
+static xSemaphoreHandle system_ready_mutex = NULL;
 static bool is_init = false;
 
 static void signal_ready_to_start(void)
@@ -38,14 +40,16 @@ static void system_init(void)
         is_init = true;
     }
 
-    debug_puts("system_init");
+    debug_puts(SYSTEM_TASK_NAME" started");
 }
 
 static void system_task(void *params)
 {
     (void) params;
+    TickType_t last_wake_time;
+
     led_init();
-    led_set(LED_SYSTEM_STATUS, true);
+    led_on(LED_SYSTEM_STATUS);
 
     uart1_init(UART1_BAUDRATE);
 
@@ -59,12 +63,14 @@ static void system_task(void *params)
 
     signal_ready_to_start();
 
+    last_wake_time = xTaskGetTickCount();
+
     while(1)
     {
+        vTaskDelayUntil(&last_wake_time, SYS_UPDATE_FREQ);
+
         led_toggle(LED_SYSTEM_STATUS);
         led_off(LED_UART2_STATUS);
-
-        vTaskDelay(M2T(500));
     }
 
     // should never get here

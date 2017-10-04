@@ -13,4 +13,5 @@ TODO:
   * Handle error bits in the IRQ receivers (like in UART drivers)
   * Do I need some sort of mutual exclusion around the UART1/debug output if used in multiple tasks (or just queue up the tx data)?
   * Write my own `src/modules/ethernetif.c` implementation
-  * Use `portYIELD_FROM_ISR()` as needed
+  * Use `portYIELD_FROM_ISR()` as needed (for example from uart1/2)
+  * Better debug messages

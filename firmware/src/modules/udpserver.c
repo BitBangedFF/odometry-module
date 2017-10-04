@@ -23,11 +23,24 @@
 #include "udp_protocol.h"
 #include "udpserver.h"
 
+typedef struct
+{
+    uint16_t offset;
+    uint32_t data;
+} queue_msg;
+
+#define DATA_QUEUE_SIZE_LEN (32)
+
 static const TickType_t UDP_TX_FREQ = M2T(100);
 static const TickType_t LINK_STATUS_FREQ = M2T(500);
-static const TickType_t TX_MUTEX_TIMEOUT = M2T(10);
+static const TickType_t TX_MUTEX_IO_TASK_TIMEOUT = M2T(2);
+static const TickType_t TX_MUTEX_DATA_TASK_TIMEOUT = portMAX_DELAY;
+static const TickType_t DATA_QUEUE_PUSH_TIMEOUT = 0;
+static const TickType_t DATA_QUEUE_POP_TIMEOUT = portMAX_DELAY;
 
 static SemaphoreHandle_t tx_mutex = NULL;
+static xQueueHandle data_queue = NULL;
+
 static uint8_t tx_buffer[UP_HEADER_SIZE+UP_MSG_DATA_SIZE];
 static up_header * const tx_header = (up_header*) &tx_buffer[0];
 static up_msg_data * const tx_msg_data = (up_msg_data*) &tx_buffer[UP_HEADER_SIZE];
@@ -101,6 +114,14 @@ static void udpserver_init(void)
     if(is_init == false)
     {
         tx_mutex = xSemaphoreCreateMutex();
+        data_queue = xQueueCreate(DATA_QUEUE_SIZE_LEN, sizeof(queue_msg));
+
+        memset(&tx_buffer[0], 0, sizeof(tx_buffer));
+
+        tx_header->version_major = UP_VERSION_MAJOR;
+        tx_header->version_minor = UP_VERSION_MINOR;
+        tx_header->msg_type = UP_MSG_TYPE_DATA;
+        tx_header->msg_size = UP_MSG_DATA_SIZE;
 
         // create tcp_ip stack thread
         tcpip_init(NULL, NULL);
@@ -113,7 +134,6 @@ static void udpserver_init(void)
         is_init = true;
     }
 
-    debug_puts("udpserver_init");
     debug_printf(
             "IP %u.%u.%u.%u:%u\r\n",
             IP_ADDR0,
@@ -121,6 +141,27 @@ static void udpserver_init(void)
             IP_ADDR2,
             IP_ADDR3,
             UDPSERVER_PORT);
+}
+
+static void data_task(void *params)
+{
+    (void) params;
+    queue_msg msg;
+
+    debug_puts(UDPSERVER_DATA_TASK_NAME" started");
+
+    while(1)
+    {
+        if(xQueueReceive(data_queue, &msg, DATA_QUEUE_POP_TIMEOUT) == pdTRUE)
+        {
+            if(xSemaphoreTake(tx_mutex, TX_MUTEX_DATA_TASK_TIMEOUT) == pdTRUE)
+            {
+                tx_msg_data->data_items[msg.offset] = msg.data;
+
+                xSemaphoreGive(tx_mutex);
+            }
+        }
+    }
 }
 
 static void io_task(void *params)
@@ -131,13 +172,6 @@ static void io_task(void *params)
     struct netbuf *io_buff;
 
     debug_puts(UDPSERVER_IO_TASK_NAME" started");
-
-    memset(&tx_buffer[0], 0, sizeof(tx_buffer));
-
-    tx_header->version_major = UP_VERSION_MAJOR;
-    tx_header->version_minor = UP_VERSION_MINOR;
-    tx_header->msg_type = UP_MSG_TYPE_DATA;
-    tx_header->msg_size = UP_MSG_DATA_SIZE;
 
     conn = netconn_new(NETCONN_UDP);
 
@@ -165,12 +199,17 @@ static void io_task(void *params)
         }
     }
 
-    io_buff = netbuf_new();
+    if(xSemaphoreTake(tx_mutex, portMAX_DELAY) == pdTRUE)
+    {
+        io_buff = netbuf_new();
 
-    (void) netbuf_ref(
-            io_buff,
-            &tx_buffer[0],
-            tx_header->msg_size+UP_HEADER_SIZE);
+        (void) netbuf_ref(
+                io_buff,
+                &tx_buffer[0],
+                tx_header->msg_size+UP_HEADER_SIZE);
+
+        xSemaphoreGive(tx_mutex);
+    }
 
     last_wake_time = xTaskGetTickCount();
 
@@ -180,7 +219,7 @@ static void io_task(void *params)
 
         if(conn != NULL)
         {
-            if(xSemaphoreTake(tx_mutex, TX_MUTEX_TIMEOUT) == pdTRUE)
+            if(xSemaphoreTake(tx_mutex, TX_MUTEX_IO_TASK_TIMEOUT) == pdTRUE)
             {
                 nc_err = netconn_send(conn, io_buff);
 
@@ -204,7 +243,20 @@ static void init_task(void *params)
 
     system_wait_for_start();
 
+    debug_puts(UDPSERVER_INIT_TASK_NAME" started");
+
     udpserver_init();
+
+#warning "TODO - fix issues with this task"
+    /*
+    (void) xTaskCreate(
+            data_task,
+            UDPSERVER_DATA_TASK_NAME,
+            UDPSERVER_DATA_TASK_STACKSIZE,
+            NULL,
+            UDPSERVER_DATA_TASK_PRI,
+            NULL);
+    */
 
     (void) xTaskCreate(
             io_task,
@@ -218,15 +270,50 @@ static void init_task(void *params)
 
     while(1)
     {
-        // TODO - use this task to drain the queue
-        // or another task, and keep this one idle/led-updates
-
         vTaskDelayUntil(&last_wake_time, LINK_STATUS_FREQ);
 
         update_link(&gnetif);
     }
 }
 
+void udpserver_start(void)
+{
+    (void) xTaskCreate(
+            init_task,
+            UDPSERVER_INIT_TASK_NAME,
+            UDPSERVER_INIT_TASK_STACKSIZE,
+            NULL,
+            UDPSERVER_INIT_TASK_PRI,
+            NULL);
+}
+
+bool udpserver_set_item(
+        const uint16_t offset,
+        const uint8_t * const data,
+        const uint8_t size)
+{
+    bool ret = false;
+
+    if(is_init == true)
+    {
+        queue_msg msg;
+
+        msg.offset = offset;
+        msg.data = 0;
+
+        memcpy(&msg.data, &data, size);
+
+        if(xQueueSendToBack(data_queue, &msg, DATA_QUEUE_PUSH_TIMEOUT) == pdTRUE)
+        {
+            ret = true;
+        }
+    }
+
+    return ret;
+}
+
+// TODO - make this better
+// it's currently part of the STM32 HAL implememted in ethernetif.c
 void ethernetif_notify_conn_changed(struct netif *netif)
 {
     if(netif_is_link_up(netif) != 0)
@@ -249,15 +336,4 @@ void ethernetif_notify_conn_changed(struct netif *netif)
     }
 
     notify(netif);
-}
-
-void udpserver_start(void)
-{
-    (void) xTaskCreate(
-            init_task,
-            UDPSERVER_INIT_TASK_NAME,
-            UDPSERVER_INIT_TASK_STACKSIZE,
-            NULL,
-            UDPSERVER_INIT_TASK_PRI,
-            NULL);
 }
