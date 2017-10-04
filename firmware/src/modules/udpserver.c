@@ -247,8 +247,6 @@ static void init_task(void *params)
 
     udpserver_init();
 
-#warning "TODO - fix issues with this task"
-    /*
     (void) xTaskCreate(
             data_task,
             UDPSERVER_DATA_TASK_NAME,
@@ -256,7 +254,6 @@ static void init_task(void *params)
             NULL,
             UDPSERVER_DATA_TASK_PRI,
             NULL);
-    */
 
     (void) xTaskCreate(
             io_task,

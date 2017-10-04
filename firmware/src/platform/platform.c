@@ -7,6 +7,8 @@
 #include <string.h>
 #include "stm32f7xx.h"
 #include "stm32f7xx_hal.h"
+#include "FreeRTOS.h"
+#include "task.h"
 #include "debugio.h"
 #include "led.h"
 #include "platform.h"
@@ -173,5 +175,16 @@ int _write(int file, char *ptr, int len)
     }
 
     return len;
+}
+
+void vApplicationStackOverflowHook(
+        TaskHandle_t task,
+        signed char *task_name)
+{
+    (void) task;
+
+    debug_printf("ERROR stack overflow detected on task '%s'\r\n", task_name);
+
+    platform_error_handler();
 }
 #endif
