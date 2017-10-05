@@ -1,6 +1,7 @@
 #include "stm32f7xx_hal.h"
 #include "stdio.h"
 #include "stm32f7xx_it.h"
+#include "led.h"
 
 void xPortSysTickHandler(void);
 
@@ -27,6 +28,7 @@ void HardFault_Handler(void)
   /* Go to infinite loop when Hard Fault exception occurs */
   while (1)
   {
+      led_set_all(true);
   }
 }
 
@@ -40,6 +42,7 @@ void MemManage_Handler(void)
   /* Go to infinite loop when Memory Manage exception occurs */
   while (1)
   {
+      led_set_all(true);
   }
 }
 
@@ -53,6 +56,7 @@ void BusFault_Handler(void)
   /* Go to infinite loop when Bus Fault exception occurs */
   while (1)
   {
+      led_set_all(true);
   }
 }
 
@@ -66,6 +70,7 @@ void UsageFault_Handler(void)
   /* Go to infinite loop when Usage Fault exception occurs */
   while (1)
   {
+      led_set_all(true);
   }
 }
 

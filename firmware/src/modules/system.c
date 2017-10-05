@@ -23,6 +23,13 @@
 static const TickType_t SYS_UPDATE_FREQ = M2T(1000);
 
 static xSemaphoreHandle system_ready_mutex = NULL;
+
+static StaticTask_t idle_task_tcb;
+static StackType_t idle_task_stack[IDLE_TASK_STACKSIZE];
+
+static StaticTask_t sys_task_tcb;
+static StackType_t sys_task_stack[SYSTEM_TASK_STACKSIZE];
+
 static bool is_init = false;
 
 static void signal_ready_to_start(void)
@@ -113,13 +120,14 @@ static void system_task(void *params)
 
 void system_start(void)
 {
-    (void) xTaskCreate(
-            system_task,
+    (void) xTaskCreateStatic(
+            &system_task,
             SYSTEM_TASK_NAME,
             SYSTEM_TASK_STACKSIZE,
             NULL,
             SYSTEM_TASK_PRI,
-            NULL);
+            &sys_task_stack[0],
+            &sys_task_tcb);
 }
 
 void system_wait_for_start(void)
@@ -131,4 +139,14 @@ void system_wait_for_start(void)
 
     xSemaphoreTake(system_ready_mutex, portMAX_DELAY);
     xSemaphoreGive(system_ready_mutex);
+}
+
+void vApplicationGetIdleTaskMemory(
+        StaticTask_t **ppxIdleTaskTCBBuffer,
+        StackType_t **ppxIdleTaskStackBuffer,
+        uint32_t *pulIdleTaskStackSize)
+{
+    *ppxIdleTaskTCBBuffer = &idle_task_tcb;
+    *ppxIdleTaskStackBuffer = &idle_task_stack[0];
+    *pulIdleTaskStackSize = (uint32_t) IDLE_TASK_STACKSIZE;
 }

@@ -248,7 +248,7 @@ static void init_task(void *params)
     udpserver_init();
 
     (void) xTaskCreate(
-            data_task,
+            &data_task,
             UDPSERVER_DATA_TASK_NAME,
             UDPSERVER_DATA_TASK_STACKSIZE,
             NULL,
@@ -256,7 +256,7 @@ static void init_task(void *params)
             NULL);
 
     (void) xTaskCreate(
-            io_task,
+            &io_task,
             UDPSERVER_IO_TASK_NAME,
             UDPSERVER_IO_TASK_STACKSIZE,
             NULL,
@@ -276,7 +276,7 @@ static void init_task(void *params)
 void udpserver_start(void)
 {
     (void) xTaskCreate(
-            init_task,
+            &init_task,
             UDPSERVER_INIT_TASK_NAME,
             UDPSERVER_INIT_TASK_STACKSIZE,
             NULL,
