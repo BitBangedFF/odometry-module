@@ -21,10 +21,10 @@
 #define UDPSERVER_IO_TASK_STACKSIZE (2 * configMINIMAL_STACK_SIZE)
 
 // task names
-#define SYSTEM_TASK_NAME "sys"
-#define UDPSERVER_INIT_TASK_NAME "udps-init"
-#define UDPSERVER_DATA_TASK_NAME "udps-data"
-#define UDPSERVER_IO_TASK_NAME "udps-io"
+#define SYSTEM_TASK_NAME "SYS"
+#define UDPSERVER_INIT_TASK_NAME "UDPS-INIT"
+#define UDPSERVER_DATA_TASK_NAME "UDPS-DATA"
+#define UDPSERVER_IO_TASK_NAME "UDPS-IO"
 
 // 1 for FreeRTOS internal idle task
 // 2 for LwIP internals (tcp/ip, ethif)

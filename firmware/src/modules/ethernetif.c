@@ -263,8 +263,8 @@ static void low_level_init(struct netif *netif)
   netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP;
 
   /* create the task that handles the ETH_MAC */
-  osThreadDef(ethif, ethernetif_input, osPriorityRealtime, 0, INTERFACE_THREAD_STACK_SIZE);
-  task_to_notify = osThreadCreate (osThread(ethif), netif);
+  osThreadDef(ETHIF, ethernetif_input, osPriorityRealtime, 0, INTERFACE_THREAD_STACK_SIZE);
+  task_to_notify = osThreadCreate (osThread(ETHIF), netif);
 
   /* Enable MAC and DMA transmission and reception */
   HAL_ETH_Start(&EthHandle);
