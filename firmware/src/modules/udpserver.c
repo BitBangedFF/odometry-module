@@ -199,10 +199,10 @@ static void io_task(void *params)
         }
     }
 
+    io_buff = netbuf_new();
+
     if(xSemaphoreTake(tx_mutex, portMAX_DELAY) == pdTRUE)
     {
-        io_buff = netbuf_new();
-
         (void) netbuf_ref(
                 io_buff,
                 &tx_buffer[0],

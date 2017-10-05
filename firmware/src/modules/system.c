@@ -20,7 +20,7 @@
 #include "udpserver.h"
 #include "system.h"
 
-static const TickType_t SYS_UPDATE_FREQ = M2T(500);
+static const TickType_t SYS_UPDATE_FREQ = M2T(1000);
 
 static xSemaphoreHandle system_ready_mutex = NULL;
 static bool is_init = false;
@@ -42,6 +42,32 @@ static void system_init(void)
 
     debug_puts(SYSTEM_TASK_NAME" started");
 }
+
+#ifdef BUILD_TYPE_DEBUG
+static void debug_output_runtime_stats(void)
+{
+    unsigned long total_run_time = 0;
+    static TaskStatus_t status_array[TASK_COUNT];
+
+    volatile UBaseType_t actual_cnt = uxTaskGetNumberOfTasks();
+
+    configASSERT(((UBaseType_t) TASK_COUNT) >= actual_cnt);
+
+    actual_cnt = uxTaskGetSystemState(
+            &status_array[0],
+            actual_cnt,
+            &total_run_time);
+
+    UBaseType_t idx;
+    for(idx = 0; idx < actual_cnt; idx += 1)
+    {
+        debug_printf(
+                "'%s' - %hu\r\n",
+                status_array[idx].pcTaskName,
+                status_array[idx].usStackHighWaterMark);
+    }
+}
+#endif
 
 static void system_task(void *params)
 {
@@ -71,6 +97,10 @@ static void system_task(void *params)
 
         led_toggle(LED_SYSTEM_STATUS);
         led_off(LED_UART2_STATUS);
+
+#ifdef BUILD_TYPE_DEBUG
+        debug_output_runtime_stats();
+#endif
     }
 
     // should never get here
@@ -79,11 +109,6 @@ static void system_task(void *params)
         led_set_all(true);
         vTaskDelay(portMAX_DELAY);
     }
-}
-
-void vApplicationIdleHook(void)
-{
-    // TODO - update watchdog
 }
 
 void system_start(void)

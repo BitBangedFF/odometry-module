@@ -15,8 +15,8 @@
 
 // task stack sizes
 #define SYSTEM_TASK_STACKSIZE (2 * configMINIMAL_STACK_SIZE)
-#define UDPSERVER_INIT_TASK_STACKSIZE (4 * configMINIMAL_STACK_SIZE)
-#define UDPSERVER_DATA_TASK_STACKSIZE (configMINIMAL_STACK_SIZE)
+#define UDPSERVER_INIT_TASK_STACKSIZE (5 * configMINIMAL_STACK_SIZE)
+#define UDPSERVER_DATA_TASK_STACKSIZE (2 * configMINIMAL_STACK_SIZE)
 #define UDPSERVER_IO_TASK_STACKSIZE (2 * configMINIMAL_STACK_SIZE)
 
 // task names
@@ -24,6 +24,10 @@
 #define UDPSERVER_INIT_TASK_NAME "udps-init"
 #define UDPSERVER_DATA_TASK_NAME "udps-data"
 #define UDPSERVER_IO_TASK_NAME "udps-io"
+
+// 1 for FreeRTOS internal idle task
+// 2 for LwIP internals (tcp/ip, ethif)
+#define TASK_COUNT (7)
 
 #define IP_ADDR0 (192)
 #define IP_ADDR1 (168)
