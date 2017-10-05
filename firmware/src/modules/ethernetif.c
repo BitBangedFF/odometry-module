@@ -45,7 +45,11 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f7xx_hal.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "config.h"
 #include "nvicconf.h"
+#include "debugio.h"
 #include "lwip/opt.h"
 #include "lwip/timeouts.h"
 #include "netif/ethernet.h"
@@ -55,14 +59,10 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-/* The time to block waiting for input. */
-#define TIME_WAITING_FOR_INPUT                 ( osWaitForever )
-/* Stack size of the interface thread */
-#define INTERFACE_THREAD_STACK_SIZE            ( 350 )
 
 /* Define those to better describe your network interface. */
-#define IFNAME0 's'
-#define IFNAME1 't'
+#define IFNAME0 'e'
+#define IFNAME1 'p'
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -75,32 +75,6 @@
          In this example the ETH buffers are located in the SRAM2 memory,
          since the data cache is enabled, so cache maintenance operations are mandatory.
  */
-#if defined ( __CC_ARM   )
-ETH_DMADescTypeDef  DMARxDscrTab[ETH_RXBUFNB] __attribute__((at(0x20020000)));/* Ethernet Rx DMA Descriptors */
-
-ETH_DMADescTypeDef  DMATxDscrTab[ETH_TXBUFNB] __attribute__((at(0x20020080)));/* Ethernet Tx DMA Descriptors */
-
-uint8_t Rx_Buff[ETH_RXBUFNB][ETH_RX_BUF_SIZE] __attribute__((at(0x2007C000))); /* Ethernet Receive Buffers */
-
-uint8_t Tx_Buff[ETH_TXBUFNB][ETH_TX_BUF_SIZE] __attribute__((at(0x2007D7D0))); /* Ethernet Transmit Buffers */
-
-#elif defined ( __ICCARM__ ) /*!< IAR Compiler */
-  #pragma data_alignment=4
-
-#pragma location=0x20020000
-__no_init ETH_DMADescTypeDef  DMARxDscrTab[ETH_RXBUFNB];/* Ethernet Rx DMA Descriptors */
-
-#pragma location=0x20020080
-__no_init ETH_DMADescTypeDef  DMATxDscrTab[ETH_TXBUFNB];/* Ethernet Tx DMA Descriptors */
-
-#pragma location=0x2007C000
-__no_init uint8_t Rx_Buff[ETH_RXBUFNB][ETH_RX_BUF_SIZE]; /* Ethernet Receive Buffers */
-
-#pragma location=0x2007D7D0
-__no_init uint8_t Tx_Buff[ETH_TXBUFNB][ETH_TX_BUF_SIZE]; /* Ethernet Transmit Buffers */
-
-#elif defined ( __GNUC__ ) /*!< GNU Compiler */
-
 ETH_DMADescTypeDef  DMARxDscrTab[ETH_RXBUFNB] __attribute__((section(".RxDecripSection")));/* Ethernet Rx DMA Descriptor */
 
 ETH_DMADescTypeDef  DMATxDscrTab[ETH_TXBUFNB] __attribute__((section(".TxDescripSection")));/* Ethernet Tx DMA Descriptors */
@@ -109,16 +83,17 @@ uint8_t Rx_Buff[ETH_RXBUFNB][ETH_RX_BUF_SIZE] __attribute__((section(".RxarraySe
 
 uint8_t Tx_Buff[ETH_TXBUFNB][ETH_TX_BUF_SIZE] __attribute__((section(".TxarraySection"))); /* Ethernet Transmit Buffers */
 
-#endif
-
 /* Semaphore (using native task notifications) to signal incoming packets */
 static TaskHandle_t task_to_notify = NULL;
 
 /* Global Ethernet handle*/
 static ETH_HandleTypeDef EthHandle;
 
+static StaticTask_t ethif_task_tcb;
+static StackType_t ethif_task_stack[ETHIF_TASK_STACKSIZE];
+
 /* Private function prototypes -----------------------------------------------*/
-static void ethernetif_input( void const * argument );
+static void ethernetif_input(void *argument);
 void ethernetif_notify_conn_changed(struct netif *netif);
 
 void ETH_IRQHandler(void)
@@ -262,9 +237,16 @@ static void low_level_init(struct netif *netif)
   /* Accept broadcast address and ARP traffic */
   netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP;
 
-  /* create the task that handles the ETH_MAC */
-  osThreadDef(ETHIF, ethernetif_input, osPriorityRealtime, 0, INTERFACE_THREAD_STACK_SIZE);
-  task_to_notify = osThreadCreate (osThread(ETHIF), netif);
+    task_to_notify =  xTaskCreateStatic(
+            &ethernetif_input,
+            ETHIF_TASK_NAME,
+            ETHIF_TASK_STACKSIZE,
+            (void*) netif,
+            ETHIF_TASK_PRI,
+            &ethif_task_stack[0],
+            &ethif_task_tcb);
+
+    configASSERT(task_to_notify != NULL);
 
   /* Enable MAC and DMA transmission and reception */
   HAL_ETH_Start(&EthHandle);
@@ -467,10 +449,14 @@ static struct pbuf * low_level_input(struct netif *netif)
   *
   * @param netif the lwip network interface structure for this ethernetif
   */
-static void ethernetif_input( void const * argument )
+static void ethernetif_input(void *argument)
 {
   struct pbuf *p;
   struct netif *netif = (struct netif *) argument;
+
+  configASSERT(netif != NULL);
+
+  debug_puts(ETHIF_TASK_NAME" started");
 
   for( ;; )
   {
