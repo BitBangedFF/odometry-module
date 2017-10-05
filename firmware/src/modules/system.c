@@ -30,6 +30,8 @@ static StackType_t idle_task_stack[IDLE_TASK_STACKSIZE];
 static StaticTask_t sys_task_tcb;
 static StackType_t sys_task_stack[SYSTEM_TASK_STACKSIZE];
 
+static StaticSemaphore_t system_ready_mutex_handle;
+
 static bool is_init = false;
 
 static void signal_ready_to_start(void)
@@ -41,7 +43,9 @@ static void system_init(void)
 {
     if(is_init == false)
     {
-        system_ready_mutex = xSemaphoreCreateMutex();
+        system_ready_mutex = xSemaphoreCreateMutexStatic(
+                &system_ready_mutex_handle);
+
         xSemaphoreTake(system_ready_mutex, portMAX_DELAY);
 
         is_init = true;
