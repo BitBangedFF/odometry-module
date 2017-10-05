@@ -19,7 +19,11 @@
 #include "led.h"
 #include "uart1.h"
 
-static xQueueHandle rx_queue = NULL;
+static StaticQueue_t rx_queue_handle;
+static uint8_t rx_queue_storage[UART1_RX_QUEUE_SIZE * sizeof(uint8_t)];
+
+static QueueHandle_t rx_queue = NULL;
+
 static bool is_init = false;
 
 void __attribute__((used)) UART1_IRQ_HANDLER(void)
@@ -53,7 +57,11 @@ void uart1_init(
         LL_USART_DisableIT_RXNE(UART1_TYPE);
         LL_USART_DisableIT_ERROR(UART1_TYPE);
 
-        rx_queue = xQueueCreate(UART1_RX_QUEUE_SIZE, sizeof(uint8_t));
+        rx_queue = xQueueCreateStatic(
+                UART1_RX_QUEUE_SIZE,
+                sizeof(uint8_t),
+                &rx_queue_storage[0],
+                &rx_queue_handle);
 
         // enable GPIO clock and configure the USART pins
         UART1_GPIO_CLK_ENABLE();

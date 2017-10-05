@@ -29,7 +29,8 @@ typedef struct
     uint32_t data;
 } queue_msg;
 
-#define DATA_QUEUE_SIZE_LEN (32)
+#define DATA_QUEUE_MSG_COUNT (32)
+#define DATA_QUEUE_MSG_SIZE (sizeof(queue_msg))
 
 static const TickType_t UDP_TX_FREQ = M2T(100);
 static const TickType_t LINK_STATUS_FREQ = M2T(500);
@@ -45,8 +46,12 @@ static StackType_t data_task_stack[UDPSERVER_DATA_TASK_STACKSIZE];
 static StaticTask_t io_task_tcb;
 static StackType_t io_task_stack[UDPSERVER_IO_TASK_STACKSIZE];
 
+static StaticQueue_t data_queue_handle;
+static uint8_t data_queue_storage[DATA_QUEUE_MSG_COUNT * DATA_QUEUE_MSG_SIZE];
+static StaticSemaphore_t tx_mutex_handle;
+
 static SemaphoreHandle_t tx_mutex = NULL;
-static xQueueHandle data_queue = NULL;
+static QueueHandle_t data_queue = NULL;
 
 static uint8_t tx_buffer[UP_HEADER_SIZE+UP_MSG_DATA_SIZE];
 static up_header * const tx_header = (up_header*) &tx_buffer[0];
@@ -120,8 +125,14 @@ static void udpserver_init(void)
 {
     if(is_init == false)
     {
-        tx_mutex = xSemaphoreCreateMutex();
-        data_queue = xQueueCreate(DATA_QUEUE_SIZE_LEN, sizeof(queue_msg));
+        tx_mutex = xSemaphoreCreateMutexStatic(
+                &tx_mutex_handle);
+
+        data_queue = xQueueCreateStatic(
+                DATA_QUEUE_MSG_COUNT,
+                DATA_QUEUE_MSG_SIZE,
+                &data_queue_storage[0],
+                &data_queue_handle);
 
         memset(&tx_buffer[0], 0, sizeof(tx_buffer));
 
