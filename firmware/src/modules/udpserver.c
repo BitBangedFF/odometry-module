@@ -38,6 +38,13 @@ static const TickType_t TX_MUTEX_DATA_TASK_TIMEOUT = portMAX_DELAY;
 static const TickType_t DATA_QUEUE_PUSH_TIMEOUT = 0;
 static const TickType_t DATA_QUEUE_POP_TIMEOUT = portMAX_DELAY;
 
+static StaticTask_t init_task_tcb;
+static StackType_t init_task_stack[UDPSERVER_INIT_TASK_STACKSIZE];
+static StaticTask_t data_task_tcb;
+static StackType_t data_task_stack[UDPSERVER_DATA_TASK_STACKSIZE];
+static StaticTask_t io_task_tcb;
+static StackType_t io_task_stack[UDPSERVER_IO_TASK_STACKSIZE];
+
 static SemaphoreHandle_t tx_mutex = NULL;
 static xQueueHandle data_queue = NULL;
 
@@ -247,21 +254,23 @@ static void init_task(void *params)
 
     udpserver_init();
 
-    (void) xTaskCreate(
+    (void) xTaskCreateStatic(
             &data_task,
             UDPSERVER_DATA_TASK_NAME,
             UDPSERVER_DATA_TASK_STACKSIZE,
             NULL,
             UDPSERVER_DATA_TASK_PRI,
-            NULL);
+            &data_task_stack[0],
+            &data_task_tcb);
 
-    (void) xTaskCreate(
+    (void) xTaskCreateStatic(
             &io_task,
             UDPSERVER_IO_TASK_NAME,
             UDPSERVER_IO_TASK_STACKSIZE,
             NULL,
             UDPSERVER_IO_TASK_PRI,
-            NULL);
+            &io_task_stack[0],
+            &io_task_tcb);
 
     last_wake_time = xTaskGetTickCount();
 
@@ -275,13 +284,14 @@ static void init_task(void *params)
 
 void udpserver_start(void)
 {
-    (void) xTaskCreate(
+    (void) xTaskCreateStatic(
             &init_task,
             UDPSERVER_INIT_TASK_NAME,
             UDPSERVER_INIT_TASK_STACKSIZE,
             NULL,
             UDPSERVER_INIT_TASK_PRI,
-            NULL);
+            &init_task_stack[0],
+            &init_task_tcb);
 }
 
 bool udpserver_set_item(
