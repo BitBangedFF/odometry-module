@@ -10,6 +10,7 @@
 #include "stm32f7xx_hal.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "queue.h"
 #include "lwip/api.h"
 #include "lwip/sys.h"
 #include "lwip/netif.h"
@@ -125,22 +126,6 @@ static void udpserver_init(void)
 {
     if(is_init == false)
     {
-        tx_mutex = xSemaphoreCreateMutexStatic(
-                &tx_mutex_handle);
-
-        data_queue = xQueueCreateStatic(
-                DATA_QUEUE_MSG_COUNT,
-                DATA_QUEUE_MSG_SIZE,
-                &data_queue_storage[0],
-                &data_queue_handle);
-
-        memset(&tx_buffer[0], 0, sizeof(tx_buffer));
-
-        tx_header->version_major = UP_VERSION_MAJOR;
-        tx_header->version_minor = UP_VERSION_MINOR;
-        tx_header->msg_type = UP_MSG_TYPE_DATA;
-        tx_header->msg_size = UP_MSG_DATA_SIZE;
-
         // create tcp_ip stack thread
         tcpip_init(NULL, NULL);
 
@@ -257,9 +242,9 @@ static void init_task(void *params)
     (void) params;
     TickType_t last_wake_time;
 
-    led_off(LED_ETH_STATUS);
-
     system_wait_for_start();
+
+    led_off(LED_ETH_STATUS);
 
     debug_puts(UDPSERVER_INIT_TASK_NAME" started");
 
@@ -295,14 +280,33 @@ static void init_task(void *params)
 
 void udpserver_start(void)
 {
-    (void) xTaskCreateStatic(
-            &init_task,
-            UDPSERVER_INIT_TASK_NAME,
-            UDPSERVER_INIT_TASK_STACKSIZE,
-            NULL,
-            UDPSERVER_INIT_TASK_PRI,
-            &init_task_stack[0],
-            &init_task_tcb);
+    if(is_init == false)
+    {
+        tx_mutex = xSemaphoreCreateMutexStatic(
+                &tx_mutex_handle);
+
+        data_queue = xQueueCreateStatic(
+                DATA_QUEUE_MSG_COUNT,
+                DATA_QUEUE_MSG_SIZE,
+                &data_queue_storage[0],
+                &data_queue_handle);
+
+        memset(&tx_buffer[0], 0, sizeof(tx_buffer));
+
+        tx_header->version_major = UP_VERSION_MAJOR;
+        tx_header->version_minor = UP_VERSION_MINOR;
+        tx_header->msg_type = UP_MSG_TYPE_DATA;
+        tx_header->msg_size = UP_MSG_DATA_SIZE;
+
+        (void) xTaskCreateStatic(
+                &init_task,
+                UDPSERVER_INIT_TASK_NAME,
+                UDPSERVER_INIT_TASK_STACKSIZE,
+                NULL,
+                UDPSERVER_INIT_TASK_PRI,
+                &init_task_stack[0],
+                &init_task_tcb);
+    }
 }
 
 bool udpserver_set_item(
@@ -312,14 +316,14 @@ bool udpserver_set_item(
 {
     bool ret = false;
 
-    if(is_init == true)
+    if((is_init == true) && (offset < UP_MSG_DATA_ITEMS_LEN))
     {
         queue_msg msg;
 
         msg.offset = offset;
         msg.data = 0;
 
-        memcpy(&msg.data, &data, size);
+        memcpy(&msg.data, data, size);
 
         if(xQueueSendToBack(data_queue, &msg, DATA_QUEUE_PUSH_TIMEOUT) == pdTRUE)
         {

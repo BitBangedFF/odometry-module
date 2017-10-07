@@ -17,7 +17,9 @@
 #include "uart1.h"
 #include "uart2.h"
 //#include "can1.h"
+#include "platform.h"
 #include "udpserver.h"
+#include "imu.h"
 #include "system.h"
 
 static const TickType_t SYS_UPDATE_FREQ = M2T(1000);
@@ -77,6 +79,7 @@ static void debug_output_runtime_stats(void)
                 status_array[idx].pcTaskName,
                 status_array[idx].usStackHighWaterMark);
     }
+    debug_puts("");
 }
 #endif
 
@@ -90,13 +93,13 @@ static void system_task(void *params)
 
     uart1_init(UART1_BAUDRATE);
 
-    uart2_init(UART2_BAUDRATE);
-
     //can1_init();
 
     system_init();
 
     udpserver_start();
+
+    imu_start();
 
     signal_ready_to_start();
 
@@ -115,11 +118,7 @@ static void system_task(void *params)
     }
 
     // should never get here
-    while(1)
-    {
-        led_set_all(true);
-        vTaskDelay(portMAX_DELAY);
-    }
+    platform_error_handler();
 }
 
 void system_start(void)

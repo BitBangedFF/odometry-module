@@ -16,7 +16,6 @@
 #include "queue.h"
 #include "nvicconf.h"
 #include "debugio.h"
-#include "led.h"
 #include "uart2.h"
 
 static StaticQueue_t rx_queue_handle;
@@ -34,8 +33,6 @@ void __attribute__((used)) UART2_IRQ_HANDLER(void)
     {
         if(LL_USART_IsEnabledIT_RXNE(UART2_TYPE) != 0)
         {
-            led_toggle(LED_UART2_STATUS);
-
             const uint8_t data = LL_USART_ReceiveData8(UART2_TYPE);
 
             (void) xQueueSendFromISR(
@@ -169,7 +166,6 @@ void uart2_send(
             while(LL_USART_IsActiveFlag_TXE(UART2_TYPE) == 0);
 
             LL_USART_TransmitData8(UART2_TYPE, data[i]);
-            led_toggle(LED_UART2_STATUS);
         }
 
         while(LL_USART_IsActiveFlag_TC(UART2_TYPE) == 0);
