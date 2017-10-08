@@ -33,7 +33,7 @@
 #define IMU_RX_TASK_NAME "IMU-RX"
 
 // 1 for FreeRTOS internal idle task
-// 2 for LwIP internals (tcp/ip, ethif)
+// 1 for LwIP internals (tcp/ip)
 #define TASK_COUNT (8)
 
 #define IP_ADDR0 (192)
