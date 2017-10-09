@@ -48,7 +48,7 @@ bool xsparser_parse_byte(
 
         update_byte(byte, parser);
         parser->checksum = 0;
-        
+
         parser->state = XSPARSER_STATE_BUS_ID;
     }
     else if(parser->state == XSPARSER_STATE_BUS_ID)
@@ -100,7 +100,7 @@ bool xsparser_parse_byte(
     else if(parser->state == XSPARSER_STATE_PAYLOAD)
     {
         update_byte(byte, parser);
-        
+
         if((parser->bytes_read + 1) == (uint32_t) parser->total_size)
         {
             parser->state = XSPARSER_STATE_CHECKSUM;
