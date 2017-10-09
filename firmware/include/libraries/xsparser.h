@@ -27,12 +27,18 @@ typedef struct
 {
     xsparser_state_kind state; /*!< Parser state. */
     uint32_t bytes_read; /*!< Number of bytes received for the current message. */
+    uint16_t total_size; /*!< Size of the current message (header, payload, and checksum) in bytes. */
+    uint16_t payload_size; /*!< Size of the current message payload in bytes. */
     uint8_t checksum; /*!< Calculated checksum for the current message. */
     uint32_t valid_count; /*!< Number of valid messages parsed. */
     uint32_t invalid_count; /*!< Number of invalid messages parsed/aborted. */
+    uint8_t *rx_buffer;
+    uint16_t rx_buffer_size;
 } xsparser;
 
 void xsparser_init(
+        uint8_t * const rx_buffer,
+        const uint16_t rx_buffer_size,
         xsparser * const parser);
 
 bool xsparser_parse_byte(

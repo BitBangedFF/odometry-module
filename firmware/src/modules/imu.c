@@ -21,10 +21,14 @@
 #include "xsparser.h"
 #include "imu.h"
 
+#define RX_BUFFER_SIZE (XS_MAXGARBAGE)
+
 static StaticTask_t rx_task_tcb;
 static StackType_t rx_task_stack[IMU_RX_TASK_STACKSIZE];
 
-static uint8_t rx_msg_buffer[XS_MAXGARBAGE];
+static uint8_t rx_msg_buffer[RX_BUFFER_SIZE];
+
+static xsparser rx_parser;
 
 static bool is_init = false;
 
@@ -39,14 +43,25 @@ static void rx_task(void *params)
 
     uart2_init(UART2_BAUDRATE);
 
+    xsparser_init(
+            &rx_msg_buffer[0],
+            RX_BUFFER_SIZE,
+            &rx_parser);
+
     debug_puts(IMU_RX_TASK_NAME" started");
 
     while(1)
     {
         if(uart2_get_char(&rx_data) == true)
         {
-            // TODO
-            led_toggle(LED_UART2_STATUS);
+            const bool msg_ready = xsparser_parse_byte(
+                    rx_data,
+                    &rx_parser);
+
+            if(msg_ready == true)
+            {
+                led_toggle(LED_UART2_STATUS);
+            }
         }
     }
 }
