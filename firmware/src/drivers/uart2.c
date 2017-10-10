@@ -4,109 +4,114 @@
  *
  */
 
-
 #include <stdint.h>
 #include <stdbool.h>
-
-#include "stm32f4xx_conf.h"
-
+#include <string.h>
+#include "stm32f7xx.h"
+#include "stm32f7xx_ll_bus.h"
+#include "stm32f7xx_ll_rcc.h"
+#include "stm32f7xx_ll_gpio.h"
+#include "stm32f7xx_ll_usart.h"
 #include "FreeRTOS.h"
 #include "queue.h"
-
 #include "nvicconf.h"
-#include "debug.h"
-#include "led.h"
+#include "debugio.h"
 #include "uart2.h"
 
+static StaticQueue_t rx_queue_handle;
+static uint8_t rx_queue_storage[UART2_RX_QUEUE_SIZE * sizeof(uint8_t)];
 
-static xQueueHandle rx_queue;
+static QueueHandle_t rx_queue = NULL;
+
 static bool is_init = false;
 
-
-static void __attribute__((used)) USART2_IRQHandler(void)
+void __attribute__((used)) UART2_IRQ_HANDLER(void)
 {
     portBASE_TYPE higher_priority_task_woken = pdFALSE;
 
-    if(USART_GetITStatus(UART2_TYPE, USART_IT_RXNE) != 0)
+    if(LL_USART_IsActiveFlag_RXNE(UART2_TYPE) != 0)
     {
-        led_toggle(LED_UART2_STATUS);
+        if(LL_USART_IsEnabledIT_RXNE(UART2_TYPE) != 0)
+        {
+            const uint8_t data = LL_USART_ReceiveData8(UART2_TYPE);
 
-        const uint8_t data = USART_ReceiveData(UART2_TYPE) & 0x00FF;
-        (void) xQueueSendFromISR(
-                rx_queue,
-                &data,
-                &higher_priority_task_woken);
+            (void) xQueueSendFromISR(
+                    rx_queue,
+                    &data,
+                    &higher_priority_task_woken);
+        }
     }
 }
-
 
 void uart2_init(
         const uint32_t baudrate)
 {
     if(is_init == false)
     {
-        USART_InitTypeDef usart_init;
-        GPIO_InitTypeDef gpio_init;
-        NVIC_InitTypeDef nvic_init;
+        LL_USART_InitTypeDef usart_init;
+        LL_GPIO_InitTypeDef gpio_init;
 
-        // enable GPIO and USART clock
-        RCC_AHB1PeriphClockCmd(UART2_GPIO_PERIF, ENABLE);
-        UART2_RCC_ENABLE(UART2_PERIF, ENABLE);
+        LL_USART_DeInit(UART2_TYPE);
+        LL_USART_Disable(UART2_TYPE);
+        LL_USART_DisableIT_RXNE(UART2_TYPE);
+        LL_USART_DisableIT_ERROR(UART2_TYPE);
 
-        // configure USART Rx as input floating
-        GPIO_StructInit(&gpio_init);
-        gpio_init.GPIO_Pin = UART2_GPIO_RX_PIN;
-        gpio_init.GPIO_Mode = GPIO_Mode_AF;
-        gpio_init.GPIO_PuPd = GPIO_PuPd_UP;
-        GPIO_Init(UART2_GPIO_PORT, &gpio_init);
+        rx_queue = xQueueCreateStatic(
+                UART2_RX_QUEUE_SIZE,
+                sizeof(uint8_t),
+                &rx_queue_storage[0],
+                &rx_queue_handle);
 
-        // configure USART Tx as alternate function
-        GPIO_StructInit(&gpio_init);
-        gpio_init.GPIO_Pin = UART2_GPIO_TX_PIN;
-        gpio_init.GPIO_Speed = GPIO_Speed_25MHz;
-        gpio_init.GPIO_OType = GPIO_OType_PP;
-        gpio_init.GPIO_Mode = GPIO_Mode_AF;
-        GPIO_Init(UART2_GPIO_PORT, &gpio_init);
+        // enable GPIO clock and configure the USART pins
+        UART2_GPIO_CLK_ENABLE();
 
-        // map to alternate functions
-        GPIO_PinAFConfig(UART2_GPIO_PORT, UART2_GPIO_AF_TX_PIN, UART2_GPIO_AF_TX);
-        GPIO_PinAFConfig(UART2_GPIO_PORT, UART2_GPIO_AF_RX_PIN, UART2_GPIO_AF_RX);
+        LL_GPIO_StructInit(&gpio_init);
+        gpio_init.Pin = UART2_GPIO_RX_PIN;
+        gpio_init.Mode = LL_GPIO_MODE_ALTERNATE;
+        gpio_init.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
+        gpio_init.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+        gpio_init.Pull = LL_GPIO_PULL_UP;
+        gpio_init.Alternate = UART2_GPIO_AF_RX;
+        LL_GPIO_Init(UART2_GPIO_PORT, &gpio_init);
 
-        USART_StructInit(&usart_init);
-        usart_init.USART_BaudRate = baudrate;
-        usart_init.USART_Mode = (USART_Mode_Rx | USART_Mode_Tx);
-        usart_init.USART_WordLength = USART_WordLength_8b;
-        usart_init.USART_StopBits = USART_StopBits_1;
-        usart_init.USART_Parity = USART_Parity_No ;
-        usart_init.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-        USART_Init(UART2_TYPE, &usart_init);
+        gpio_init.Pin = UART2_GPIO_TX_PIN;
+        gpio_init.Alternate = UART2_GPIO_AF_TX;
+        LL_GPIO_Init(UART2_GPIO_PORT, &gpio_init);
 
-        nvic_init.NVIC_IRQChannel = UART2_IRQ;
-        nvic_init.NVIC_IRQChannelPreemptionPriority = NVIC_MID_PRI;
-        nvic_init.NVIC_IRQChannelSubPriority = 0;
-        nvic_init.NVIC_IRQChannelCmd = ENABLE;
-        NVIC_Init(&nvic_init);
+        // configure NVIC for USART interrupts
+        NVIC_SetPriority(UART2_IRQ, NVIC_UART1_PRI);
+        NVIC_EnableIRQ(UART2_IRQ);
 
-        rx_queue = xQueueCreate(UART2_RX_QUEUE_SIZE, sizeof(uint8_t));
+        // enable USART peripheral clock and clock source
+        UART2_CLK_ENABLE();
+        UART2_CLK_SOURCE();
 
-        USART_ITConfig(UART2_TYPE, USART_IT_RXNE, ENABLE);
+        // configure USART parameters
+        LL_USART_StructInit(&usart_init);
+        usart_init.BaudRate = baudrate;
+        usart_init.DataWidth = LL_USART_DATAWIDTH_8B;
+        usart_init.StopBits = LL_USART_STOPBITS_1;
+        usart_init.Parity = LL_USART_PARITY_NONE;
+        usart_init.TransferDirection = LL_USART_DIRECTION_TX_RX;
+        usart_init.HardwareFlowControl = LL_USART_HWCONTROL_NONE;
+        usart_init.OverSampling = LL_USART_OVERSAMPLING_16;
+        LL_USART_Init(UART2_TYPE, &usart_init);
 
-        USART_Cmd(UART2_TYPE, ENABLE);
+        LL_USART_Enable(UART2_TYPE);
 
-        USART_ITConfig(UART2_TYPE, USART_IT_RXNE, ENABLE);
+        LL_USART_ClearFlag_ORE(UART2_TYPE);
+
+        LL_USART_EnableIT_RXNE(UART2_TYPE);
+        //LL_USART_EnableIT_ERROR(UART2_TYPE);
 
         is_init = true;
     }
-
-    debug_puts("uart2_init\n");
 }
-
 
 bool uart2_is_init(void)
 {
     return is_init;
 }
-
 
 bool uart2_get_char(
         uint8_t * const data)
@@ -121,7 +126,6 @@ bool uart2_get_char(
 
     return ret;
 }
-
 
 bool uart2_get_char_timeout(
         uint8_t * const data)
@@ -144,13 +148,11 @@ bool uart2_get_char_timeout(
     return ret;
 }
 
-
 void uart2_put_char(
         const uint8_t data)
 {
     uart2_send(&data, 1);
 }
-
 
 void uart2_send(
         const uint8_t * const data,
@@ -161,9 +163,11 @@ void uart2_send(
         uint32_t i;
         for(i = 0; i < size; i += 1)
         {
-            while((UART2_TYPE->SR & USART_FLAG_TXE) == 0);
+            while(LL_USART_IsActiveFlag_TXE(UART2_TYPE) == 0);
 
-            UART2_TYPE->DR = (data[i] & 0x00FF);
+            LL_USART_TransmitData8(UART2_TYPE, data[i]);
         }
+
+        while(LL_USART_IsActiveFlag_TC(UART2_TYPE) == 0);
     }
 }

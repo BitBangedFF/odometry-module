@@ -1,18 +1,16 @@
 ###
-# Purpose: to create a bare-metal project with mbed SDK.
-
-###
 # GNU ARM Embedded Toolchain
-CC=arm-none-eabi-gcc
-CXX=arm-none-eabi-g++
-LD=arm-none-eabi-ld
-AR=arm-none-eabi-ar
-AS=arm-none-eabi-as
-CP=arm-none-eabi-objcopy
-OD=arm-none-eabi-objdump
-NM=arm-none-eabi-nm
-SIZE=arm-none-eabi-size
-A2L=arm-none-eabi-addr2line
+TOOLCHAIN=/opt/gcc-arm-none-eabi-6-2017-q2-update
+TOOLCHAIN_BIN=$(TOOLCHAIN)/bin
+
+CC=$(TOOLCHAIN_BIN)/arm-none-eabi-gcc
+LD=$(TOOLCHAIN_BIN)/arm-none-eabi-ld
+AR=$(TOOLCHAIN_BIN)/arm-none-eabi-ar
+AS=$(TOOLCHAIN_BIN)/arm-none-eabi-as
+CP=$(TOOLCHAIN_BIN)/arm-none-eabi-objcopy
+OD=$(TOOLCHAIN_BIN)/arm-none-eabi-objdump
+SIZE=$(TOOLCHAIN_BIN)/arm-none-eabi-size
+GDB=$(TOOLCHAIN_BIN)/arm-none-eabi-gdb
 
 ###
 # Directory Structure
@@ -23,82 +21,99 @@ SRCDIR=src
 ###
 # Find source files
 ASOURCES=$(shell find -L $(SRCDIR) -name '*.s')
-CSOURCES=$(shell find -L $(SRCDIR) -name '*.c')
-CXXSOURCES=$(shell find -L $(SRCDIR) -name '*.cpp')
+CSOURCES+=$(shell find -L $(SRCDIR) -name '*.c')
 # Find header directories
-INC=$(shell find -L $(INCDIR) -name '*.h' -exec dirname {} \; | uniq)
+INC=$(shell find -L . -name '*.h' -exec dirname {} \; | uniq)
 INCLUDES=$(INC:%=-I%)
-# Find libraries
-INCLUDES_LIBS=
-LINK_LIBS=
 # Create object list
 OBJECTS=$(ASOURCES:%.s=%.o)
 OBJECTS+=$(CSOURCES:%.c=%.o)
-OBJECTS+=$(CXXSOURCES:%.cpp=%.o)
 # Define output files ELF & IHEX
-BINELF=outp.elf
-BINHEX=outp.hex
+BINELF=template-binary.elf
+BINHEX=template-binary.hex
 
 ###
 # MCU FLAGS
-MCFLAGS=-mcpu=cortex-m4 -mthumb -mlittle-endian \
--mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb-interwork
+MCFLAGS=-mcpu=cortex-m7 -mthumb -mlittle-endian
+MCFLAGS+=-mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb-interwork
 # COMPILE FLAGS
-DEFS=-DUSE_STDPERIPH_DRIVER -DSTM32F4XX
-CFLAGS=-c $(MCFLAGS) $(DEFS) $(INCLUDES)
-CXXFLAGS=-c $(MCFLAGS) $(DEFS) $(INCLUDES) -std=c++11
+DEFS=-DARM_MATH_CM7 -DUSE_HAL_DRIVER
+DEFS+=-DSTM32F767xx -DSTM32F7XX -DSTM32F7_NUCLEO
+CFLAGS  =-c $(MCFLAGS) -std=gnu99 -Wall $(DEFS) $(INCLUDES)
 # LINKER FLAGS
-LDSCRIPT=stm32_flash.ld
-LDFLAGS =-T $(LDSCRIPT) $(MCFLAGS) --specs=nosys.specs $(INCLUDES_LIBS) $(LINK_LIBS)
+LDSCRIPT_DEBUG=linker/stm32f7_link.ld
+LDSCRIPT=linker/stm32f7_link.ld
+LDFLAGS=-T $(LDSCRIPT) --specs=nosys.specs $(MCFLAGS)
+LDFLAGS+=../vendor/STM32Cube_FW_F7_V1.8.0/Drivers/CMSIS/Lib/GCC/libarm_cortexM7lfsp_math.a
+
+###
+# Optimizations
+OPT?='O1 O2 O3 O4 O6 O7' # O5 disabled by default, because it breaks code
+
+# only when running 'make release-memopt'
+ifneq ($(findstring release-memopt,$(MAKECMDGOALS)),)
+ifneq ($(filter O1,$(OPT)),)
+CXXFLAGS+=-fno-exceptions # Uncomment to disable exception handling
+DEFS+=-DNO_EXCEPTIONS # The source code has to comply with this rule
+endif
+
+ifneq ($(filter O2,$(OPT)),)
+CFLAGS+=-Os # Optimize for size https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
+CXXFLAGS+=-Os
+LDFLAGS+=-Os # Optimize for size https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
+endif
+
+ifneq ($(filter O3,$(OPT)),)
+CFLAGS+=-ffunction-sections -fdata-sections # Place each function or data item into its own section in the output file
+CXXFLAGS+=-ffunction-sections -fdata-sections # -||-
+LDFLAGS+=-Wl,-gc-sections # Remove isolated unused sections
+endif
+
+ifneq ($(filter O4,$(OPT)),)
+CFLAGS+=-fno-builtin # Disable C++ exception handling
+CXXFLAGS+=-fno-builtin # Disable C++ exception handling
+endif
+
+ifneq ($(filter O5,$(OPT)),)
+CFLAGS+=-flto # Enable link time optimization
+CXXFLAGS+=-flto # Enable link time optimization
+LDFLAGS+=-flto # Enable link time optimization
+endif
+
+ifneq ($(filter O6,$(OPT)),)
+CXXFLAGS+=-fno-rtti # Disable type introspection
+endif
+
+ifneq ($(findstring O7,$(OPT)),)
+LDFLAGS+=--specs=nano.specs # Use size optimized newlib
+endif
+endif
 
 ###
 # Build Rules
-.PHONY: all release release-memopt debug clean
+.PHONY: all release release-memopt debug clean flash st-semihost gdb
 
-all: release-memopt
-
-release-memopt-blame: CFLAGS+=-g
-release-memopt-blame: CXXFLAGS+=-g
-release-memopt-blame: LDFLAGS+=-g -Wl,-Map=$(BINDIR)/output.map
-release-memopt-blame: release-memopt
-release-memopt-blame:
-	@echo "Top 10 space consuming symbols from the object code ...\n"
-	$(NM) -A -l -C -td --reverse-sort --size-sort $(BINDIR)/$(BINELF) | head -n10 | cat -n # Output legend: man nm
-	@echo "\n... and corresponging source files to blame.\n"
-	$(NM) --reverse-sort --size-sort -S -tx $(BINDIR)/$(BINELF) | head -10 | cut -d':' -f2 | cut -d' ' -f1 | $(A2L) -e $(BINDIR)/$(BINELF) | cat -n # Output legend: man addr2line
-
-release-memopt: DEFS+=-DCUSTOM_NEW -DNO_EXCEPTIONS
-release-memopt: CFLAGS+=-Os -ffunction-sections -fdata-sections -fno-builtin # -flto
-release-memopt: CXXFLAGS+=-Os -fno-exceptions -ffunction-sections -fdata-sections -fno-builtin -fno-rtti # -flto
-release-memopt: LDFLAGS+=-Os -Wl,-gc-sections --specs=nano.specs # -flto
-release-memopt: release
-
-debug: CFLAGS+=-g
-debug: CXXFLAGS+=-g
-debug: LDFLAGS+=-g
-debug: release
+all: release
 
 release: $(BINDIR)/$(BINHEX)
+
+release-memopt: release
+
+debug: CFLAGS+=-ggdb -DBUILD_TYPE_DEBUG
+debug: LDFLAGS+=-ggdb
+#debug: LDFLAGS+=--specs=rdimon.specs -lc -lrdimon
+debug: LDSCRIPT=$(LDSCRIPT_DEBUG)
+debug: release
 
 $(BINDIR)/$(BINHEX): $(BINDIR)/$(BINELF)
 	$(CP) -O ihex $< $@
 	@echo "Objcopy from ELF to IHEX complete!\n"
 
-##
-# C++ linking is used.
-#
-# Change
-#   $(CXX) $(OBJECTS) $(LDFLAGS) -o $@ to 
-#   $(CC) $(OBJECTS) $(LDFLAGS) -o $@ if
-#   C linker is required.
 $(BINDIR)/$(BINELF): $(OBJECTS)
-	$(CXX) $(OBJECTS) $(LDFLAGS) -o $@
+	@mkdir -p bin
+	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
 	@echo "Linking complete!\n"
 	$(SIZE) $(BINDIR)/$(BINELF)
-
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) $< -o $@
-	@echo "Compiled "$<"!\n"
 
 %.o: %.c
 	$(CC) $(CFLAGS) $< -o $@
@@ -109,7 +124,13 @@ $(BINDIR)/$(BINELF): $(OBJECTS)
 	@echo "Assambled "$<"!\n"
 
 clean:
-	rm -f $(OBJECTS) $(BINDIR)/$(BINELF) $(BINDIR)/$(BINHEX) $(BINDIR)/output.map
+	rm -f $(OBJECTS) $(BINDIR)/$(BINELF) $(BINDIR)/$(BINHEX)
 
-deploy:
+flash:
 	st-flash --format ihex write $(BINDIR)/$(BINHEX)
+
+st-semihost:
+	st-util --semihosting
+
+gdb:
+	$(GDB) --command=gdb/gdbinit $(BINDIR)/$(BINELF)

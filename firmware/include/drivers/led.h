@@ -4,55 +4,49 @@
  *
  */
 
-
 #ifndef LED_H
 #define LED_H
 
-
 #include <stdbool.h>
 
+#define LED_GPIO_PORT GPIOB
 
-#define LED_GPIO_PERIF RCC_AHB1Periph_GPIOD
-#define LED_GPIO_PORT GPIOD
+#define LED_GPIO_CLK_ENABLE() LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB)
 
-#define LED_PIN_GREEN GPIO_Pin_12
-#define LED_PIN_ORANGE GPIO_Pin_13
-#define LED_PIN_RED GPIO_Pin_14
-#define LED_PIN_BLUE GPIO_Pin_15
+#define LED_PIN_GREEN LL_GPIO_PIN_0
+#define LED_PIN_BLUE LL_GPIO_PIN_7
+#define LED_PIN_RED LL_GPIO_PIN_14
 
-#define LED_UART1_STATUS LED_GREEN
-#define LED_UART2_STATUS LED_ORANGE
-#define LED_CAN1_STATUS LED_BLUE
+#define LED_UART2_STATUS LED_GREEN
+#define LED_ETH_STATUS LED_BLUE
 #define LED_SYSTEM_STATUS LED_RED
-#define LED_COUNT (4)
-
+#define LED_COUNT (3)
 
 typedef enum
 {
     LED_GREEN = 0,
-    LED_ORANGE,
-    LED_RED,
-    LED_BLUE
+    LED_BLUE,
+    LED_RED
 } led_kind;
-
 
 void led_init(void);
 
-
 bool led_is_init(void);
-
 
 void led_set(
         const led_kind led,
         const bool state);
 
+void led_on(
+        const led_kind led);
+
+void led_off(
+        const led_kind led);
 
 void led_toggle(
         const led_kind led);
 
-
 void led_set_all(
         const bool state);
 
-
-#endif  /* LED_H */
+#endif /* LED_H */

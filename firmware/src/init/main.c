@@ -4,31 +4,24 @@
  *
  */
 
-
-#include "stm32f4xx_conf.h"
-
 #include "FreeRTOS.h"
 #include "task.h"
-
-#include "config.h"
-#include "debug.h"
-#include "led.h"
+#include "platform.h"
 #include "system.h"
-
 
 int main(void)
 {
-    debug_init();
-
-    (void) SysTick_Config(SystemCoreClock / 1000);
+    platform_init();
 
     system_start();
 
     vTaskStartScheduler();
 
     // should never get here
-    led_set_all(true);
-    while(1);
+    while(1)
+    {
+        platform_error_handler();
+    }
 
     return 0;
 }
