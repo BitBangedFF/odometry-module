@@ -1,12 +1,16 @@
 ###
 # GNU ARM Embedded Toolchain
-CC=arm-none-eabi-gcc
-LD=arm-none-eabi-ld
-AR=arm-none-eabi-ar
-AS=arm-none-eabi-as
-CP=arm-none-eabi-objcopy
-OD=arm-none-eabi-objdump
-SIZE=arm-none-eabi-size
+TOOLCHAIN=/opt/gcc-arm-none-eabi-6-2017-q2-update
+TOOLCHAIN_BIN=$(TOOLCHAIN)/bin
+
+CC=$(TOOLCHAIN_BIN)/arm-none-eabi-gcc
+LD=$(TOOLCHAIN_BIN)/arm-none-eabi-ld
+AR=$(TOOLCHAIN_BIN)/arm-none-eabi-ar
+AS=$(TOOLCHAIN_BIN)/arm-none-eabi-as
+CP=$(TOOLCHAIN_BIN)/arm-none-eabi-objcopy
+OD=$(TOOLCHAIN_BIN)/arm-none-eabi-objdump
+SIZE=$(TOOLCHAIN_BIN)/arm-none-eabi-size
+GDB=$(TOOLCHAIN_BIN)/arm-none-eabi-gdb
 
 ###
 # Directory Structure
@@ -18,9 +22,19 @@ SRCDIR=src
 # Find source files
 ASOURCES=$(shell find -L $(SRCDIR) -name '*.s')
 CSOURCES+=$(shell find -L $(SRCDIR) -name '*.c')
-# Find header directories
-INC=$(shell find -L . -name '*.h' -exec dirname {} \; | uniq)
+
+#INC=$(shell find -L . -name '*.h' -exec dirname {} \; | uniq)
+
+# Find header directories for the project (not the vendor packages)
+INC=$(shell find -L . -path ./include/vendor -prune -o -path ./src/vendor -prune -o -name '*.h' -exec dirname {} \; | uniq)
+# Add vendor include directories
+INC+=$(shell find -L ./include/vendor -name '*.h' -exec dirname {} \; | uniq)
+INC+=$(shell find -L ./src/vendor -name '*.h' -exec dirname {} \; | uniq)
+# Some of the vendor directory structure breaks the auto logic
+INC+=./include/vendor/LwIP_core
+INC+=./include/vendor/LwIP_system
 INCLUDES=$(INC:%=-I%)
+
 # Create object list
 OBJECTS=$(ASOURCES:%.s=%.o)
 OBJECTS+=$(CSOURCES:%.c=%.o)
@@ -30,20 +44,27 @@ BINHEX=odometry-module.hex
 
 ###
 # MCU FLAGS
-MCFLAGS=-mcpu=cortex-m4 -mthumb -mlittle-endian \
--mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb-interwork
+MCFLAGS=-mcpu=cortex-m7 -mthumb -mlittle-endian
+MCFLAGS+=-mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb-interwork
 # COMPILE FLAGS
-DEFS=-DUSE_STDPERIPH_DRIVER -DSTM32F4XX
-CFLAGS  =-c $(MCFLAGS) -std=gnu99 -Wall $(DEFS) $(INCLUDES)
+DEFS=-DARM_MATH_CM7 -DUSE_HAL_DRIVER
+DEFS+=-DSTM32F767xx -DSTM32F7XX -DSTM32F7_NUCLEO -DUSE_FULL_LL_DRIVER
+CFLAGS=-c $(MCFLAGS)
+CFLAGS+=-std=gnu99 -Wall -Wextra -Wimplicit-function-declaration -Wstrict-prototypes -Wundef -Wshadow
+CFLAGS+=$(DEFS) $(INCLUDES)
 # LINKER FLAGS
-LDSCRIPT_DEBUG=linker/stm32_flash_debug.ld
-LDSCRIPT=linker/stm32_flash.ld
+LDSCRIPT_DEBUG=linker/stm32f7_link.ld
+LDSCRIPT=linker/stm32f7_link.ld
 LDFLAGS=-T $(LDSCRIPT) --specs=nosys.specs $(MCFLAGS)
+LDFLAGS+=../vendor/STM32Cube_FW_F7_V1.8.0/Drivers/CMSIS/Lib/GCC/libarm_cortexM7lfsp_math.a
+# print out memory usage
+LDFLAGS+=-Wl,--print-memory-usage
 
 ###
 # Optimizations
 OPT?='O1 O2 O3 O4 O6 O7' # O5 disabled by default, because it breaks code
 
+# only when running 'make release-memopt'
 ifneq ($(findstring release-memopt,$(MAKECMDGOALS)),)
 ifneq ($(filter O1,$(OPT)),)
 CXXFLAGS+=-fno-exceptions # Uncomment to disable exception handling
@@ -94,7 +115,7 @@ release-memopt: release
 
 debug: CFLAGS+=-ggdb -DBUILD_TYPE_DEBUG
 debug: LDFLAGS+=-ggdb
-debug: LDFLAGS+=--specs=rdimon.specs -lc -lrdimon
+#debug: LDFLAGS+=--specs=rdimon.specs -lc -lrdimon
 debug: LDSCRIPT=$(LDSCRIPT_DEBUG)
 debug: release
 
@@ -126,4 +147,4 @@ st-semihost:
 	st-util --semihosting
 
 gdb:
-	arm-none-eabi-gdb $(BINDIR)/$(BINELF)
+	$(GDB) --command=gdb/gdbinit $(BINDIR)/$(BINELF)

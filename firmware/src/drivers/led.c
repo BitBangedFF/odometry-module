@@ -4,59 +4,51 @@
  *
  */
 
-
 #include <stdint.h>
 #include <stdbool.h>
-
-#include "stm32f4xx_conf.h"
-
-#include "debug.h"
+#include "stm32f7xx.h"
+#include "stm32f7xx_ll_bus.h"
+#include "stm32f7xx_ll_rcc.h"
+#include "stm32f7xx_ll_gpio.h"
+#include "debugio.h"
 #include "led.h"
 
-
 static bool is_init = false;
-
 
 static const uint32_t LED_PINS[] =
 {
     [LED_GREEN] = LED_PIN_GREEN,
-    [LED_ORANGE] = LED_PIN_ORANGE,
-    [LED_RED] = LED_PIN_RED,
-    [LED_BLUE] = LED_PIN_BLUE
+    [LED_BLUE] = LED_PIN_BLUE,
+    [LED_RED] = LED_PIN_RED
 };
-
 
 void led_init(void)
 {
     if(is_init == false)
     {
-        GPIO_InitTypeDef gpio_leds;
+        LL_GPIO_InitTypeDef gpio_init;
 
-        RCC_AHB1PeriphClockCmd(LED_GPIO_PERIF, ENABLE);
+        LED_GPIO_CLK_ENABLE();
 
-        GPIO_StructInit(&gpio_leds);
-        gpio_leds.GPIO_Mode = GPIO_Mode_OUT;
-        gpio_leds.GPIO_Pin = (LED_PIN_GREEN | LED_PIN_ORANGE | LED_PIN_RED | LED_PIN_BLUE);
-        gpio_leds.GPIO_PuPd = GPIO_PuPd_NOPULL;
-        gpio_leds.GPIO_Speed = GPIO_Speed_25MHz;
-        gpio_leds.GPIO_OType = GPIO_OType_PP;
-
-        GPIO_Init(GPIOD, &gpio_leds);
-
-        led_set_all(false);
+        LL_GPIO_StructInit(&gpio_init);
+        gpio_init.Pin = (LED_PIN_GREEN | LED_PIN_BLUE | LED_PIN_RED);
+        gpio_init.Mode = LL_GPIO_MODE_OUTPUT;
+        gpio_init.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
+        gpio_init.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+        gpio_init.Pull = LL_GPIO_PULL_NO;
+        gpio_init.Alternate = 0;
+        LL_GPIO_Init(LED_GPIO_PORT, &gpio_init);
 
         is_init = true;
+
+        led_set_all(false);
     }
-
-    debug_puts("led_init\n");
 }
-
 
 bool led_is_init(void)
 {
     return is_init;
 }
-
 
 void led_set(
         const led_kind led,
@@ -64,21 +56,31 @@ void led_set(
 {
     if(state == true)
     {
-        GPIO_SetBits(LED_GPIO_PORT, LED_PINS[led]);
+        LL_GPIO_SetOutputPin(LED_GPIO_PORT, LED_PINS[led]);
     }
     else
     {
-        GPIO_ResetBits(LED_GPIO_PORT, LED_PINS[led]);
+        LL_GPIO_ResetOutputPin(LED_GPIO_PORT, LED_PINS[led]);
     }
 }
 
+void led_on(
+        const led_kind led)
+{
+    LL_GPIO_SetOutputPin(LED_GPIO_PORT, LED_PINS[led]);
+}
+
+void led_off(
+        const led_kind led)
+{
+    LL_GPIO_ResetOutputPin(LED_GPIO_PORT, LED_PINS[led]);
+}
 
 void led_toggle(
         const led_kind led)
 {
-    GPIO_ToggleBits(LED_GPIO_PORT, LED_PINS[led]);
+    LL_GPIO_TogglePin(LED_GPIO_PORT, LED_PINS[led]);
 }
-
 
 void led_set_all(
         const bool state)

@@ -1,0 +1,1 @@
+../../vendor/STM32Cube_FW_F7_V1.8.0/Drivers/BSP/STM32F7xx_Nucleo_144/stm32f7xx_nucleo_144.h
