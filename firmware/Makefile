@@ -23,8 +23,6 @@ SRCDIR=src
 ASOURCES=$(shell find -L $(SRCDIR) -name '*.s')
 CSOURCES+=$(shell find -L $(SRCDIR) -name '*.c')
 
-#INC=$(shell find -L . -name '*.h' -exec dirname {} \; | uniq)
-
 # Find header directories for the project (not the vendor packages)
 INC=$(shell find -L . -path ./include/vendor -prune -o -path ./src/vendor -prune -o -name '*.h' -exec dirname {} \; | uniq)
 # Add vendor include directories
@@ -115,7 +113,6 @@ release-memopt: release
 
 debug: CFLAGS+=-ggdb -DBUILD_TYPE_DEBUG
 debug: LDFLAGS+=-ggdb
-#debug: LDFLAGS+=--specs=rdimon.specs -lc -lrdimon
 debug: LDSCRIPT=$(LDSCRIPT_DEBUG)
 debug: release
 
